@@ -176,7 +176,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     currentStudent() {
       if (state.session?.kind !== "student") return null;
-      return state.students.find((s) => s.id === state.session!.studentId) ?? null;
+      return state.students.find((s) => s.id === state.session.studentId) ?? null;
     },
     completeLesson(lessonId, score) {
       setState((p) => {
