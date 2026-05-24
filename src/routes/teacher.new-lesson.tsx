@@ -10,24 +10,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Trash2, Upload, Check } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/teacher/new-lesson")({ component: NewLessonPage });
+type Search = { id?: string };
+
+export const Route = createFileRoute("/teacher/new-lesson")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+  }),
+  component: NewLessonPage,
+});
 
 function NewLessonPage() {
   const app = useApp();
   const navigate = useNavigate();
+  const { id: editId } = Route.useSearch();
+  const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
 
   useEffect(() => {
     if (app.session?.kind !== "teacher") navigate({ to: "/" });
   }, [app.session, navigate]);
 
-  const [title, setTitle] = useState("");
-  const [emoji, setEmoji] = useState("📘");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("## Welcome!\n\nWrite your lesson here. Use **bold** and bullet points.\n\n- First point\n- Second point");
-  const [attachments, setAttachments] = useState<{ name: string; url: string }[]>([]);
-  const [questions, setQuestions] = useState<QuizQuestion[]>([
-    { id: crypto.randomUUID(), question: "", options: ["", "", "", ""], correctIndex: 0 },
-  ]);
+  const [title, setTitle] = useState(editing?.title ?? "");
+  const [emoji, setEmoji] = useState(editing?.emoji ?? "📘");
+  const [description, setDescription] = useState(editing?.description ?? "");
+  const [content, setContent] = useState(
+    editing?.content ??
+      "## Welcome!\n\nWrite your lesson here. Use **bold** and bullet points.\n\n- First point\n- Second point",
+  );
+  const [attachments, setAttachments] = useState<{ name: string; url: string }[]>(editing?.attachments ?? []);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(
+    editing?.quiz ?? [{ id: crypto.randomUUID(), question: "", options: ["", "", "", ""], correctIndex: 0 }],
+  );
 
   function updateQ(id: string, patch: Partial<QuizQuestion>) {
     setQuestions((qs) => qs.map((q) => (q.id === id ? { ...q, ...patch } : q)));
@@ -44,21 +56,42 @@ function NewLessonPage() {
     if (questions.some((q) => !q.question.trim() || q.options.some((o) => !o.trim()))) {
       return toast.error("Fill in every question and option.");
     }
-    app.addLesson({ title: title.trim(), emoji, description: description.trim(), content, attachments, quiz: questions });
-    toast.success("Lesson published!");
+    const payload = { title: title.trim(), emoji, description: description.trim(), content, attachments, quiz: questions };
+    if (editing) {
+      app.updateLesson(editing.id, payload);
+      toast.success("Lesson updated!");
+    } else {
+      app.addLesson(payload);
+      toast.success("Lesson published!");
+    }
+    navigate({ to: "/teacher" });
+  }
+
+  function remove() {
+    if (!editing) return;
+    if (!confirm(`Delete "${editing.title}"? Students' progress for this lesson will be removed.`)) return;
+    app.deleteLesson(editing.id);
+    toast.success("Lesson deleted.");
     navigate({ to: "/teacher" });
   }
 
   return (
     <div className="min-h-screen pb-16">
-      <AppHeader title="New lesson" subtitle="Build a new phase" />
+      <AppHeader title={editing ? "Edit lesson" : "New lesson"} subtitle={editing ? "Update a phase" : "Build a new phase"} />
       <div className="mx-auto max-w-3xl px-4 pt-6">
         <Link to="/teacher" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
         <Card className="rounded-3xl border-2 p-6">
-          <h1 className="mb-4 text-2xl">Create a new phase</h1>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h1 className="text-2xl">{editing ? "Edit phase" : "Create a new phase"}</h1>
+            {editing && (
+              <Button variant="outline" size="sm" onClick={remove} className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10">
+                <Trash2 className="mr-1 h-4 w-4" /> Delete
+              </Button>
+            )}
+          </div>
 
           <div className="grid gap-4 md:grid-cols-[1fr_auto]">
             <div className="space-y-1.5">
@@ -166,7 +199,9 @@ function NewLessonPage() {
 
           <div className="mt-8 flex justify-end gap-3">
             <Button variant="outline" className="rounded-2xl" onClick={() => navigate({ to: "/teacher" })}>Cancel</Button>
-            <Button onClick={save} className="rounded-2xl px-6 py-6 font-bold btn-pop">Publish lesson</Button>
+            <Button onClick={save} className="rounded-2xl px-6 py-6 font-bold btn-pop">
+              {editing ? "Save changes" : "Publish lesson"}
+            </Button>
           </div>
         </Card>
       </div>

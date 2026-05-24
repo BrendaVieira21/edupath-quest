@@ -42,6 +42,8 @@ type AppState = {
   currentStudent: () => Student | null;
   completeLesson: (lessonId: string, score: { correct: number; total: number }) => void;
   addLesson: (lesson: Omit<Lesson, "id">) => void;
+  updateLesson: (id: string, patch: Omit<Lesson, "id">) => void;
+  deleteLesson: (id: string) => void;
 };
 
 const STORAGE_KEY = "linguapath_state_v1";
@@ -202,6 +204,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addLesson(lesson) {
       const id = "l_" + Math.random().toString(36).slice(2, 9);
       setState((p) => ({ ...p, lessons: [...p.lessons, { ...lesson, id }] }));
+    },
+    updateLesson(id, patch) {
+      setState((p) => ({
+        ...p,
+        lessons: p.lessons.map((l) => (l.id === id ? { ...patch, id } : l)),
+      }));
+    },
+    deleteLesson(id) {
+      setState((p) => ({
+        ...p,
+        lessons: p.lessons.filter((l) => l.id !== id),
+        students: p.students.map((s) => ({
+          ...s,
+          completedLessons: s.completedLessons.filter((x) => x !== id),
+          quizScores: Object.fromEntries(Object.entries(s.quizScores).filter(([k]) => k !== id)),
+        })),
+      }));
     },
   };
 
