@@ -20,9 +20,18 @@ export const Route = createFileRoute("/teacher/new-lesson")({
 });
 
 function NewLessonPage() {
+  const { id: editId } = Route.useSearch();
+  const app = useApp();
+  const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
+  // Wait until the target lesson is available (handles localStorage hydration timing),
+  // then key the form by id so useState initializers pick up its data.
+  if (editId && !editing) return null;
+  return <LessonForm key={editId ?? "new"} editId={editId} />;
+}
+
+function LessonForm({ editId }: { editId?: string }) {
   const app = useApp();
   const navigate = useNavigate();
-  const { id: editId } = Route.useSearch();
   const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
 
   useEffect(() => {
