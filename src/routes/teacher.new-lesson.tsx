@@ -20,9 +20,15 @@ export const Route = createFileRoute("/teacher/new-lesson")({
 });
 
 function NewLessonPage() {
+  const { id: editId } = Route.useSearch();
+  // Remount the form whenever the target lesson changes (or when entering as "new")
+  // so useState picks up the editing lesson's data after navigation/hydration.
+  return <LessonForm key={editId ?? "new"} editId={editId} />;
+}
+
+function LessonForm({ editId }: { editId?: string }) {
   const app = useApp();
   const navigate = useNavigate();
-  const { id: editId } = Route.useSearch();
   const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
 
   useEffect(() => {
