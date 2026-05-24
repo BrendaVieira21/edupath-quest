@@ -21,8 +21,11 @@ export const Route = createFileRoute("/teacher/new-lesson")({
 
 function NewLessonPage() {
   const { id: editId } = Route.useSearch();
-  // Remount the form whenever the target lesson changes (or when entering as "new")
-  // so useState picks up the editing lesson's data after navigation/hydration.
+  const app = useApp();
+  const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
+  // Wait until the target lesson is available (handles localStorage hydration timing),
+  // then key the form by id so useState initializers pick up its data.
+  if (editId && !editing) return null;
   return <LessonForm key={editId ?? "new"} editId={editId} />;
 }
 
