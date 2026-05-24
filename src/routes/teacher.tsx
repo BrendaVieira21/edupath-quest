@@ -4,7 +4,7 @@ import { useApp } from "@/lib/app-store";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, BookOpen } from "lucide-react";
+import { Plus, Users, BookOpen, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/teacher")({ component: TeacherPage });
 
@@ -44,10 +44,15 @@ function TeacherPage() {
               {app.lessons.map((l, i) => (
                 <div key={l.id} className="flex items-center gap-3 rounded-2xl border-2 p-3">
                   <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-xl">{l.emoji}</div>
-                  <div className="flex-1">
-                    <div className="text-sm font-bold">Phase {i + 1}: {l.title}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate text-sm font-bold">Phase {i + 1}: {l.title}</div>
                     <div className="text-xs text-muted-foreground">{l.quiz.length} question{l.quiz.length === 1 ? "" : "s"}</div>
                   </div>
+                  <Link to="/teacher/new-lesson" search={{ id: l.id }}>
+                    <Button variant="outline" size="sm" className="rounded-xl">
+                      <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                    </Button>
+                  </Link>
                 </div>
               ))}
             </div>
