@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Progress } from "@/components/ui/progress";
 import { Check, Lock, Star } from "lucide-react";
 
-export const Route = createFileRoute("/student")({ component: StudentPage });
+export const Route = createFileRoute("/student/")({ component: StudentPage });
 
 function StudentPage() {
   const app = useApp();
