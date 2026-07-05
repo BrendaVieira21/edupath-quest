@@ -50,9 +50,8 @@ function LessonForm({ editId }: { editId?: string }) {
   const navigate = useNavigate();
   const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
 
-  useEffect(() => {
-    if (app.session?.kind !== "teacher") navigate({ to: "/" });
-  }, [app.session, navigate]);
+
+
 
   const [title, setTitle] = useState(editing?.title ?? "");
   const [emoji, setEmoji] = useState(editing?.emoji ?? "📘");
