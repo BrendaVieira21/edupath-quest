@@ -35,6 +35,7 @@ type AppState = {
   lessons: Lesson[];
   students: Student[];
   session: Session;
+  hydrated: boolean;
   signupStudent: (name: string, email: string, password: string) => string | null;
   loginStudent: (email: string, password: string) => string | null;
   loginTeacher: () => void;
@@ -44,6 +45,7 @@ type AppState = {
   addLesson: (lesson: Omit<Lesson, "id">) => void;
   updateLesson: (id: string, patch: Omit<Lesson, "id">) => void;
   deleteLesson: (id: string) => void;
+  moveLesson: (id: string, dir: -1 | 1) => void;
 };
 
 const STORAGE_KEY = "linguapath_state_v1";
