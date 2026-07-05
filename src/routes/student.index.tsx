@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Progress } from "@/components/ui/progress";
 import { Check, Lock, Star } from "lucide-react";
 
-export const Route = createFileRoute("/student")({ component: StudentPage });
+export const Route = createFileRoute("/student/")({ component: StudentPage });
 
 function StudentPage() {
   const app = useApp();
@@ -13,9 +13,10 @@ function StudentPage() {
   const student = app.currentStudent();
 
   useEffect(() => {
-    if (app.session?.kind !== "student") navigate({ to: "/" });
-  }, [app.session, navigate]);
+    if (app.hydrated && app.session?.kind !== "student") navigate({ to: "/" });
+  }, [app.hydrated, app.session, navigate]);
 
+  if (!app.hydrated) return null;
   if (!student) return null;
 
   const total = app.lessons.length;

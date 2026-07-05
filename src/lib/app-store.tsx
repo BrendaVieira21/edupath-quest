@@ -35,6 +35,7 @@ type AppState = {
   lessons: Lesson[];
   students: Student[];
   session: Session;
+  hydrated: boolean;
   signupStudent: (name: string, email: string, password: string) => string | null;
   loginStudent: (email: string, password: string) => string | null;
   loginTeacher: () => void;
@@ -44,6 +45,7 @@ type AppState = {
   addLesson: (lesson: Omit<Lesson, "id">) => void;
   updateLesson: (id: string, patch: Omit<Lesson, "id">) => void;
   deleteLesson: (id: string) => void;
+  moveLesson: (id: string, dir: -1 | 1) => void;
 };
 
 const STORAGE_KEY = "linguapath_state_v1";
@@ -153,6 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     lessons: state.lessons,
     students: state.students,
     session: state.session,
+    hydrated,
     signupStudent(name, email, password) {
       if (state.students.some((s) => s.email.toLowerCase() === email.toLowerCase())) {
         return "An account with that email already exists.";
@@ -221,6 +224,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           quizScores: Object.fromEntries(Object.entries(s.quizScores).filter(([k]) => k !== id)),
         })),
       }));
+    },
+    moveLesson(id, dir) {
+      setState((p) => {
+        const idx = p.lessons.findIndex((l) => l.id === id);
+        const target = idx + dir;
+        if (idx < 0 || target < 0 || target >= p.lessons.length) return p;
+        const next = [...p.lessons];
+        [next[idx], next[target]] = [next[target], next[idx]];
+        return { ...p, lessons: next };
+      });
     },
   };
 

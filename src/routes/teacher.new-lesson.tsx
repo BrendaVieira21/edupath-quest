@@ -22,10 +22,26 @@ export const Route = createFileRoute("/teacher/new-lesson")({
 function NewLessonPage() {
   const { id: editId } = Route.useSearch();
   const app = useApp();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (app.hydrated && app.session?.kind !== "teacher") navigate({ to: "/" });
+  }, [app.hydrated, app.session, navigate]);
+
+  // Wait for localStorage hydration so the form initializes with the real lesson data.
+  if (!app.hydrated) return null;
+
   const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
-  // Wait until the target lesson is available (handles localStorage hydration timing),
-  // then key the form by id so useState initializers pick up its data.
-  if (editId && !editing) return null;
+  if (editId && !editing) {
+    return (
+      <div className="min-h-screen">
+        <AppHeader title="Edit lesson" />
+        <div className="mx-auto max-w-2xl px-4 py-10 text-center text-muted-foreground">
+          Lesson not found. <Link to="/teacher" className="text-primary underline">Back to dashboard</Link>
+        </div>
+      </div>
+    );
+  }
   return <LessonForm key={editId ?? "new"} editId={editId} />;
 }
 
@@ -34,9 +50,8 @@ function LessonForm({ editId }: { editId?: string }) {
   const navigate = useNavigate();
   const editing = editId ? app.lessons.find((l) => l.id === editId) : undefined;
 
-  useEffect(() => {
-    if (app.session?.kind !== "teacher") navigate({ to: "/" });
-  }, [app.session, navigate]);
+
+
 
   const [title, setTitle] = useState(editing?.title ?? "");
   const [emoji, setEmoji] = useState(editing?.emoji ?? "📘");

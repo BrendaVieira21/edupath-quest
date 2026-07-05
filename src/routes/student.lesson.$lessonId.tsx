@@ -18,8 +18,11 @@ function LessonPage() {
   const [answers, setAnswers] = useState<Record<string, number | undefined>>({});
 
   useEffect(() => {
-    if (app.session?.kind !== "student") navigate({ to: "/" });
-  }, [app.session, navigate]);
+    if (app.hydrated && app.session?.kind !== "student") navigate({ to: "/" });
+  }, [app.hydrated, app.session, navigate]);
+
+  if (!app.hydrated) return null;
+
 
   if (!lesson) {
     return (
