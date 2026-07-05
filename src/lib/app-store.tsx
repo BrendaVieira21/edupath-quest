@@ -225,6 +225,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })),
       }));
     },
+    moveLesson(id, dir) {
+      setState((p) => {
+        const idx = p.lessons.findIndex((l) => l.id === id);
+        const target = idx + dir;
+        if (idx < 0 || target < 0 || target >= p.lessons.length) return p;
+        const next = [...p.lessons];
+        [next[idx], next[target]] = [next[target], next[idx]];
+        return { ...p, lessons: next };
+      });
+    },
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
