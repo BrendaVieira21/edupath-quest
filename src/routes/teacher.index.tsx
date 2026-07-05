@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, BookOpen, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 
-export const Route = createFileRoute("/teacher")({ component: TeacherPage });
+export const Route = createFileRoute("/teacher/")({ component: TeacherPage });
 
 function TeacherPage() {
   const app = useApp();
