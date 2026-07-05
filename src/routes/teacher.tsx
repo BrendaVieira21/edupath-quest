@@ -4,7 +4,7 @@ import { useApp } from "@/lib/app-store";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, BookOpen, Pencil } from "lucide-react";
+import { Plus, Users, BookOpen, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 
 export const Route = createFileRoute("/teacher")({ component: TeacherPage });
 
@@ -13,8 +13,10 @@ function TeacherPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (app.session?.kind !== "teacher") navigate({ to: "/" });
-  }, [app.session, navigate]);
+    if (app.hydrated && app.session?.kind !== "teacher") navigate({ to: "/" });
+  }, [app.hydrated, app.session, navigate]);
+
+  if (!app.hydrated) return null;
 
   const total = app.lessons.length;
 
