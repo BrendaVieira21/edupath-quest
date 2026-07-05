@@ -155,6 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     lessons: state.lessons,
     students: state.students,
     session: state.session,
+    hydrated,
     signupStudent(name, email, password) {
       if (state.students.some((s) => s.email.toLowerCase() === email.toLowerCase())) {
         return "An account with that email already exists.";
