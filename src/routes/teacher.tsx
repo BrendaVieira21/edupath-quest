@@ -43,6 +43,11 @@ function TeacherPage() {
               <h2 className="text-lg">Lessons ({total})</h2>
             </div>
             <div className="space-y-2">
+              {app.lessons.length === 0 && (
+                <p className="rounded-2xl border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No lessons yet. Click <b>New lesson</b> to create your first phase.
+                </p>
+              )}
               {app.lessons.map((l, i) => (
                 <div key={l.id} className="flex items-center gap-3 rounded-2xl border-2 p-3">
                   <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-xl">{l.emoji}</div>
@@ -50,11 +55,19 @@ function TeacherPage() {
                     <div className="truncate text-sm font-bold">Phase {i + 1}: {l.title}</div>
                     <div className="text-xs text-muted-foreground">{l.quiz.length} question{l.quiz.length === 1 ? "" : "s"}</div>
                   </div>
-                  <Link to="/teacher/new-lesson" search={{ id: l.id }}>
-                    <Button variant="outline" size="sm" className="rounded-xl">
-                      <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={i === 0} onClick={() => app.moveLesson(l.id, -1)} title="Move up">
+                      <ArrowUp className="h-4 w-4" />
                     </Button>
-                  </Link>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={i === app.lessons.length - 1} onClick={() => app.moveLesson(l.id, 1)} title="Move down">
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Link to="/teacher/new-lesson" search={{ id: l.id }}>
+                      <Button variant="outline" size="sm" className="rounded-xl">
+                        <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
