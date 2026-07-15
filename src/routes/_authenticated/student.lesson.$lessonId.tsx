@@ -143,9 +143,13 @@ function LessonPage() {
                     {type.includes("audio") && (
                       <div className="mb-4">
                         <Button type="button" onClick={() => {
-                          const u = new SpeechSynthesisUtterance(opts.spoken_text);
-                          u.lang = "en-US";
-                          window.speechSynthesis.speak(u);
+                          const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(opts.spoken_text)}&tl=en&client=tw-ob`;
+                          new Audio(url).play().catch(() => {
+                            // Fallback to browser TTS if audio tag fails
+                            const u = new SpeechSynthesisUtterance(opts.spoken_text);
+                            u.lang = "en-US";
+                            window.speechSynthesis.speak(u);
+                          });
                         }} variant="outline" className="rounded-xl font-bold w-full max-w-[200px] border-primary text-primary hover:bg-primary/10">
                           🔊 Ouvir áudio
                         </Button>

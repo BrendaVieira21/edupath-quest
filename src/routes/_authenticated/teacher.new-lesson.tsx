@@ -296,10 +296,14 @@ function LessonForm({
                       <Label className="text-xs">Texto que será lido em voz alta pelo navegador (Inglês)</Label>
                       <div className="flex gap-2">
                         <Input value={q.spokenText} onChange={(e) => updateQ(q.id, { spokenText: e.target.value })} placeholder="Texto para áudio" className="rounded-xl bg-background" />
-                        <Button type="button" variant="outline" className="rounded-xl" onClick={() => {
-                          const u = new SpeechSynthesisUtterance(q.spokenText);
-                          u.lang = "en-US";
-                          window.speechSynthesis.speak(u);
+                        <Button type="button" variant="secondary" size="sm" className="rounded-xl" onClick={() => {
+                          if (!q.spokenText) return toast.error("Digite o texto do áudio primeiro");
+                          const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(q.spokenText)}&tl=en&client=tw-ob`;
+                          new Audio(url).play().catch(() => {
+                            const u = new SpeechSynthesisUtterance(q.spokenText);
+                            u.lang = "en-US";
+                            window.speechSynthesis.speak(u);
+                          });
                         }}>Testar Voz</Button>
                       </div>
                     </div>
