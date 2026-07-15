@@ -156,7 +156,7 @@ function LessonPage() {
                     
                     {type.includes("choice") ? (
                       <div className="grid gap-2">
-                        {(opts.choices ?? q.options ?? []).map((opt: string, oi: number) => {
+                        {(Array.isArray(opts) ? opts : (Array.isArray(opts?.choices) ? opts.choices : [])).map((opt: string, oi: number) => {
                           const active = answers[q.id] === oi;
                           return (
                             <button key={oi} type="button" onClick={() => setAnswers((p) => ({ ...p, [q.id]: oi }))}
@@ -213,7 +213,7 @@ function LessonPage() {
                     
                     {type.includes("choice") ? (
                       <div className="grid gap-2">
-                        {(opts.choices ?? q.options ?? []).map((opt: string, oi: number) => {
+                        {(Array.isArray(opts) ? opts : (Array.isArray(opts?.choices) ? opts.choices : [])).map((opt: string, oi: number) => {
                           const correct = oi === q.correct_index;
                           const chosen = oi === picked;
                           return (
@@ -285,14 +285,16 @@ function renderInline(text: string) {
   return parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>));
 }
 
-function DualLanguageMarkdown({ content }: { content: string }) {
+function DualLanguageMarkdown({ content }: { content: string | null | undefined }) {
   const [lang, setLang] = useState<"pt" | "en">("pt");
+  
+  const safeContent = content || "";
 
-  if (!content.includes(":::pt") && !content.includes(":::en")) {
-    return <article className="prose-content space-y-3 text-[15px] leading-relaxed">{renderMarkdownish(content)}</article>;
+  if (!safeContent.includes(":::pt") && !safeContent.includes(":::en")) {
+    return <article className="prose-content space-y-3 text-[15px] leading-relaxed">{renderMarkdownish(safeContent)}</article>;
   }
 
-  const parts = content.split(/(?=:::[a-z]+)/);
+  const parts = safeContent.split(/(?=:::[a-z]+)/);
   const ptContent = parts.find(p => p.startsWith(":::pt"))?.replace(/^:::pt\s*/, "") ?? "";
   const enContent = parts.find(p => p.startsWith(":::en"))?.replace(/^:::en\s*/, "") ?? "";
 
