@@ -1,10 +1,15 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
 import { Progress } from "@/components/ui/progress";
 import { Check, Lock, Star } from "lucide-react";
 import { lessonsQuery, myProgressQuery, myRoleQuery } from "@/lib/queries";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { claimTeacherRole } from "@/lib/teacher.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/student/")({ component: StudentPage });
 
@@ -76,6 +81,10 @@ function StudentPage() {
             );
           })}
         </ol>
+
+        <div className="mt-16">
+          <TeacherClaim />
+        </div>
       </div>
     </div>
   );
@@ -88,4 +97,34 @@ function PathNode({ emoji, state }: { emoji: string; state: "done" | "current" |
   if (state === "current")
     return <div className={`${base} bg-primary text-primary-foreground node-shadow animate-pulse`}>{emoji}</div>;
   return <div className={`${base} bg-muted text-muted-foreground node-shadow-locked opacity-70`}><Lock className="h-7 w-7" /></div>;
+}
+
+function TeacherClaim() {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const claim = useServerFn(claimTeacherRole);
+  const qc = useQueryClient();
+
+  async function handleClaim(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true);
+    try {
+      await claim({ data: { code: code.trim() } });
+      toast.success("Bem-vindo(a), professor(a)!");
+      qc.invalidateQueries({ queryKey: myRoleQuery().queryKey });
+    } catch (err) {
+      toast.error("Código de convite inválido.");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <form onSubmit={handleClaim} className="mx-auto flex max-w-sm items-center gap-2 rounded-2xl bg-muted/50 p-3 opacity-50 transition-opacity hover:opacity-100">
+      <Input type="password" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Código secreto de professor" className="rounded-xl bg-background text-sm" />
+      <Button type="submit" disabled={loading} size="sm" className="rounded-xl btn-pop shrink-0">
+        {loading ? "..." : "Ativar"}
+      </Button>
+    </form>
+  );
 }
