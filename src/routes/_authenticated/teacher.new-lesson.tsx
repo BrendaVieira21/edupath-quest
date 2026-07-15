@@ -33,7 +33,7 @@ function parseLegacyOrNew(q: any): QDraft {
       id: q.id,
       question: q.question,
       type: opts.type ?? "multiple_choice",
-      options: opts.choices ?? ["", "", "", ""],
+      options: Array.isArray(opts.choices) ? opts.choices : ["", "", "", ""],
       correctIndex: q.correct_index ?? 0,
       textAnswer: opts.text_answer ?? "",
       spokenText: opts.spoken_text ?? "",
