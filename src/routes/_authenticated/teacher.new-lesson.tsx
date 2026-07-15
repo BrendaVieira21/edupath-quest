@@ -21,7 +21,26 @@ export const Route = createFileRoute("/_authenticated/teacher/new-lesson")({
   component: NewLessonPage,
 });
 
-type QDraft = { id: string; question: string; options: string[]; correctIndex: number };
+type QType = "multiple_choice" | "writing" | "audio_choice" | "audio_writing";
+type QDraft = { id: string; question: string; type: QType; options: string[]; correctIndex: number; textAnswer: string; spokenText: string; };
+
+function parseLegacyOrNew(q: any): QDraft {
+  const opts = q.options as any;
+  if (Array.isArray(opts)) {
+    return { id: q.id, question: q.question, type: "multiple_choice", options: opts, correctIndex: q.correct_index ?? 0, textAnswer: "", spokenText: "" };
+  } else if (typeof opts === "object" && opts !== null) {
+    return {
+      id: q.id,
+      question: q.question,
+      type: opts.type ?? "multiple_choice",
+      options: opts.choices ?? ["", "", "", ""],
+      correctIndex: q.correct_index ?? 0,
+      textAnswer: opts.text_answer ?? "",
+      spokenText: opts.spoken_text ?? "",
+    };
+  }
+  return { id: q.id, question: q.question, type: "multiple_choice", options: ["", "", "", ""], correctIndex: 0, textAnswer: "", spokenText: "" };
+}
 
 function NewLessonPage() {
   const { id: editId } = Route.useSearch();
@@ -82,12 +101,8 @@ function LessonForm({
     initial?.attachments?.map((a) => ({ id: a.id, name: a.name, url: a.url })) ?? [],
   );
   const [questions, setQuestions] = useState<QDraft[]>(
-    initial?.questions.map((q) => ({
-      id: q.id,
-      question: q.question,
-      options: q.options,
-      correctIndex: q.correct_index,
-    })) ?? [{ id: crypto.randomUUID(), question: "", options: ["", "", "", ""], correctIndex: 0 }],
+    initial?.questions.map(parseLegacyOrNew) ??
+      [{ id: crypto.randomUUID(), question: "", type: "multiple_choice", options: ["", "", "", ""], correctIndex: 0, textAnswer: "", spokenText: "" }],
   );
   const [saving, setSaving] = useState(false);
 
@@ -104,8 +119,14 @@ function LessonForm({
   async function save() {
     if (!title.trim()) return toast.error("Adicione um título.");
     if (questions.length === 0) return toast.error("Adicione pelo menos uma questão.");
-    if (questions.some((q) => !q.question.trim() || q.options.some((o) => !o.trim()))) {
-      return toast.error("Preencha todas as questões e opções.");
+    if (questions.some((q) => {
+      if (!q.question.trim()) return true;
+      if (q.type.includes("choice") && q.options.some((o) => !o.trim())) return true;
+      if (q.type.includes("writing") && !q.textAnswer.trim()) return true;
+      if (q.type.includes("audio") && !q.spokenText.trim()) return true;
+      return false;
+    })) {
+      return toast.error("Preencha todos os campos das questões (perguntas, opções ou respostas).");
     }
     setSaving(true);
     try {
@@ -135,7 +156,12 @@ function LessonForm({
         questions.map((q, i) => ({
           lesson_id: lessonId!,
           question: q.question,
-          options: q.options,
+          options: {
+            type: q.type,
+            choices: q.type.includes("choice") ? q.options : [],
+            text_answer: q.type.includes("writing") ? q.textAnswer : "",
+            spoken_text: q.type.includes("audio") ? q.spokenText : "",
+          },
           correct_index: q.correctIndex,
           position: i + 1,
         })),
@@ -206,7 +232,8 @@ function LessonForm({
           </div>
 
           <div className="mt-4 space-y-1.5">
-            <Label>Conteúdo (Markdown: ## títulos, **negrito**, listas)</Label>
+            <Label>Conteúdo (Use :::pt e :::en para textos bilíngues, Markdown suportado)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Exemplo: <br/>:::pt<br/>Olá mundo!<br/>:::en<br/>Hello world!</p>
             <Textarea value={content} onChange={(e) => setContent(e.target.value)} className="min-h-[180px] rounded-xl font-mono text-sm" />
           </div>
 
@@ -234,7 +261,7 @@ function LessonForm({
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg">Teste</h2>
               <Button variant="outline" size="sm" className="rounded-xl"
-                onClick={() => setQuestions((qs) => [...qs, { id: crypto.randomUUID(), question: "", options: ["", "", "", ""], correctIndex: 0 }])}>
+                onClick={() => setQuestions((qs) => [...qs, { id: crypto.randomUUID(), type: "multiple_choice", question: "", options: ["", "", "", ""], correctIndex: 0, textAnswer: "", spokenText: "" }])}>
                 <Plus className="mr-1 h-4 w-4" /> Adicionar questão
               </Button>
             </div>
@@ -242,37 +269,78 @@ function LessonForm({
             <div className="space-y-4">
               {questions.map((q, qi) => (
                 <div key={q.id} className="rounded-2xl border-2 p-4">
-                  <div className="mb-2 flex items-center justify-between">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
-                    {questions.length > 1 && (
-                      <button onClick={() => setQuestions((qs) => qs.filter((x) => x.id !== q.id))} className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+                    
+                    <div className="flex items-center gap-3">
+                      <select 
+                        value={q.type} 
+                        onChange={(e) => updateQ(q.id, { type: e.target.value as QType })}
+                        className="rounded-xl border-2 bg-background px-3 py-1 text-sm font-semibold"
+                      >
+                        <option value="multiple_choice">Múltipla Escolha</option>
+                        <option value="writing">Escrita (Digitação)</option>
+                        <option value="audio_choice">Áudio - Escolha</option>
+                        <option value="audio_writing">Áudio - Escrita</option>
+                      </select>
+                      {questions.length > 1 && (
+                        <button onClick={() => setQuestions((qs) => qs.filter((x) => x.id !== q.id))} className="text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <Input value={q.question} onChange={(e) => updateQ(q.id, { question: e.target.value })} placeholder="Digite sua pergunta" className="mb-3 rounded-xl" />
-                  <div className="grid gap-2">
-                    {q.options.map((opt, oi) => {
-                      const isCorrect = q.correctIndex === oi;
-                      return (
-                        <div key={oi} className="flex items-center gap-2">
-                          <button type="button" onClick={() => updateQ(q.id, { correctIndex: oi })}
-                            className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 ${isCorrect ? "border-success bg-success text-success-foreground" : "bg-muted"}`}
-                            title="Marcar como correta">
-                            {isCorrect ? <Check className="h-4 w-4" strokeWidth={3} /> : <span className="text-xs font-bold">{String.fromCharCode(65 + oi)}</span>}
-                          </button>
-                          <Input value={opt}
-                            onChange={(e) => {
-                              const next = [...q.options];
-                              next[oi] = e.target.value;
-                              updateQ(q.id, { options: next });
-                            }}
-                            placeholder={`Opção ${oi + 1}`} className="rounded-xl" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Toque na letra para marcar a resposta correta.</p>
+
+                  {q.type.includes("audio") && (
+                    <div className="mb-3 space-y-1.5 rounded-xl bg-muted p-3">
+                      <Label className="text-xs">Texto que será lido em voz alta pelo navegador (Inglês)</Label>
+                      <div className="flex gap-2">
+                        <Input value={q.spokenText} onChange={(e) => updateQ(q.id, { spokenText: e.target.value })} placeholder="Texto para áudio" className="rounded-xl bg-background" />
+                        <Button type="button" variant="outline" className="rounded-xl" onClick={() => {
+                          const u = new SpeechSynthesisUtterance(q.spokenText);
+                          u.lang = "en-US";
+                          window.speechSynthesis.speak(u);
+                        }}>Testar Voz</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <Input value={q.question} onChange={(e) => updateQ(q.id, { question: e.target.value })} placeholder="Digite a pergunta/enunciado" className="mb-3 rounded-xl font-bold" />
+
+                  {q.type.includes("choice") && (
+                    <>
+                      <div className="grid gap-2">
+                        {q.options.map((opt, oi) => {
+                          const isCorrect = q.correctIndex === oi;
+                          return (
+                            <div key={oi} className="flex items-center gap-2">
+                              <button type="button" onClick={() => updateQ(q.id, { correctIndex: oi })}
+                                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 ${isCorrect ? "border-success bg-success text-success-foreground" : "bg-muted"}`}
+                                title="Marcar como correta">
+                                {isCorrect ? <Check className="h-4 w-4" strokeWidth={3} /> : <span className="text-xs font-bold">{String.fromCharCode(65 + oi)}</span>}
+                              </button>
+                              <Input value={opt}
+                                onChange={(e) => {
+                                  const next = [...q.options];
+                                  next[oi] = e.target.value;
+                                  updateQ(q.id, { options: next });
+                                }}
+                                placeholder={`Opção ${oi + 1}`} className="rounded-xl" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">Toque na letra para marcar a resposta correta.</p>
+                    </>
+                  )}
+
+                  {q.type.includes("writing") && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Resposta correta esperada</Label>
+                      <Input value={q.textAnswer} onChange={(e) => updateQ(q.id, { textAnswer: e.target.value })} placeholder="Ex: Hello" className="rounded-xl" />
+                      <p className="mt-1 text-xs text-muted-foreground">O aluno deve digitar exatamente assim (ignora-se maiúsculas/minúsculas).</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

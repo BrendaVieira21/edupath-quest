@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ArrowLeft, Check, Download, X, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { lessonQuery, myProgressQuery } from "@/lib/queries";
@@ -19,11 +20,25 @@ function LessonPage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(lessonQuery(lessonId));
   const [mode, setMode] = useState<"read" | "quiz" | "results">("read");
-  const [answers, setAnswers] = useState<Record<string, number | undefined>>({});
+  const [answers, setAnswers] = useState<Record<string, number | string | undefined>>({});
 
   const correctCount = useMemo(() => {
     if (!data) return 0;
-    return data.questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_index ? 1 : 0), 0);
+    return data.questions.reduce((acc, q) => {
+      const ans = answers[q.id];
+      if (ans === undefined) return acc;
+      
+      const opts = q.options as any;
+      const type = opts?.type ?? "multiple_choice";
+      
+      if (type.includes("choice")) {
+        return acc + (ans === q.correct_index ? 1 : 0);
+      } else {
+        const expected = (opts?.text_answer ?? "").toLowerCase().trim();
+        const actual = String(ans).toLowerCase().trim();
+        return acc + (expected === actual ? 1 : 0);
+      }
+    }, 0);
   }, [answers, data]);
 
   if (isLoading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Carregando...</div>;
@@ -41,7 +56,10 @@ function LessonPage() {
   const { lesson, questions, attachments } = data;
 
   async function submit() {
-    const unanswered = questions.some((q) => answers[q.id] === undefined);
+    const unanswered = questions.some((q) => {
+      const ans = answers[q.id];
+      return ans === undefined || (typeof ans === "string" && ans.trim() === "");
+    });
     if (unanswered) return toast.error("Responda todas as perguntas primeiro.");
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
@@ -90,9 +108,7 @@ function LessonPage() {
 
           {mode === "read" && (
             <>
-              <article className="prose-content space-y-3 text-[15px] leading-relaxed">
-                {renderMarkdownish(lesson.content)}
-              </article>
+              <DualLanguageMarkdown content={lesson.content} />
               {attachments.length > 0 && (
                 <div className="mt-6">
                   <div className="mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Materiais</div>
@@ -116,23 +132,53 @@ function LessonPage() {
 
           {mode === "quiz" && (
             <div className="space-y-6">
-              {questions.map((q, qi) => (
-                <div key={q.id} className="rounded-2xl border-2 bg-background/50 p-4">
-                  <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
-                  <div className="mb-3 font-bold">{q.question}</div>
-                  <div className="grid gap-2">
-                    {q.options.map((opt, oi) => {
-                      const active = answers[q.id] === oi;
-                      return (
-                        <button key={oi} type="button" onClick={() => setAnswers((p) => ({ ...p, [q.id]: oi }))}
-                          className={`rounded-2xl border-2 px-4 py-3 text-left text-sm font-semibold transition ${active ? "border-primary bg-primary/15" : "hover:bg-accent"}`}>
-                          {opt}
-                        </button>
-                      );
-                    })}
+              {questions.map((q, qi) => {
+                const opts = q.options as any;
+                const type = opts?.type ?? "multiple_choice";
+                
+                return (
+                  <div key={q.id} className="rounded-2xl border-2 bg-background/50 p-4">
+                    <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
+                    
+                    {type.includes("audio") && (
+                      <div className="mb-4">
+                        <Button type="button" onClick={() => {
+                          const u = new SpeechSynthesisUtterance(opts.spoken_text);
+                          u.lang = "en-US";
+                          window.speechSynthesis.speak(u);
+                        }} variant="outline" className="rounded-xl font-bold w-full max-w-[200px] border-primary text-primary hover:bg-primary/10">
+                          🔊 Ouvir áudio
+                        </Button>
+                      </div>
+                    )}
+
+                    {q.question && <div className="mb-3 font-bold">{q.question}</div>}
+                    
+                    {type.includes("choice") ? (
+                      <div className="grid gap-2">
+                        {(opts.choices ?? q.options ?? []).map((opt: string, oi: number) => {
+                          const active = answers[q.id] === oi;
+                          return (
+                            <button key={oi} type="button" onClick={() => setAnswers((p) => ({ ...p, [q.id]: oi }))}
+                              className={`rounded-2xl border-2 px-4 py-3 text-left text-sm font-semibold transition ${active ? "border-primary bg-primary/15" : "hover:bg-accent"}`}>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <Input 
+                          value={(answers[q.id] as string) || ""} 
+                          onChange={(e) => setAnswers(p => ({ ...p, [q.id]: e.target.value }))}
+                          placeholder="Digite sua resposta..." 
+                          className="rounded-xl border-2 px-4 py-6 font-bold" 
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <Button onClick={submit} className="w-full rounded-2xl py-6 text-base font-bold btn-pop">Enviar respostas</Button>
             </div>
           )}
@@ -150,29 +196,51 @@ function LessonPage() {
               </div>
               {questions.map((q, qi) => {
                 const picked = answers[q.id];
-                const isRight = picked === q.correct_index;
+                const opts = q.options as any;
+                const type = opts?.type ?? "multiple_choice";
+                
+                let isRight = false;
+                if (type.includes("choice")) isRight = picked === q.correct_index;
+                else isRight = String(picked ?? "").toLowerCase().trim() === (opts?.text_answer ?? "").toLowerCase().trim();
+
                 return (
                   <div key={q.id} className={`rounded-2xl border-2 p-4 ${isRight ? "border-success bg-success/10" : "border-destructive/40 bg-destructive/5"}`}>
                     <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
                       {isRight ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-destructive" />}
                       Questão {qi + 1}
                     </div>
-                    <div className="mb-3 font-bold">{q.question}</div>
-                    <div className="grid gap-2">
-                      {q.options.map((opt, oi) => {
-                        const correct = oi === q.correct_index;
-                        const chosen = oi === picked;
-                        return (
-                          <div key={oi} className={`flex items-center justify-between rounded-xl border-2 px-3 py-2 text-sm font-semibold ${
-                            correct ? "border-success bg-success/15" : chosen ? "border-destructive bg-destructive/10" : "border-transparent bg-muted"
-                          }`}>
-                            <span>{opt}</span>
-                            {correct && <Check className="h-4 w-4 text-success" />}
-                            {!correct && chosen && <X className="h-4 w-4 text-destructive" />}
+                    {q.question && <div className="mb-3 font-bold">{q.question}</div>}
+                    
+                    {type.includes("choice") ? (
+                      <div className="grid gap-2">
+                        {(opts.choices ?? q.options ?? []).map((opt: string, oi: number) => {
+                          const correct = oi === q.correct_index;
+                          const chosen = oi === picked;
+                          return (
+                            <div key={oi} className={`flex items-center justify-between rounded-xl border-2 px-3 py-2 text-sm font-semibold ${
+                              correct ? "border-success bg-success/15" : chosen ? "border-destructive bg-destructive/10" : "border-transparent bg-muted"
+                            }`}>
+                              <span>{opt}</span>
+                              {correct && <Check className="h-4 w-4 text-success" />}
+                              {!correct && chosen && <X className="h-4 w-4 text-destructive" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="mt-2 grid gap-2 text-sm">
+                        <div className="flex items-center gap-2 rounded-xl border-2 px-3 py-2 bg-muted">
+                          <span className="font-bold text-muted-foreground">Sua resposta:</span>
+                          <span className={isRight ? "text-success font-bold" : "text-destructive font-bold"}>{String(picked ?? "(em branco)")}</span>
+                        </div>
+                        {!isRight && (
+                          <div className="flex items-center gap-2 rounded-xl border-2 border-success bg-success/15 px-3 py-2">
+                            <span className="font-bold text-success">Resposta correta:</span>
+                            <span className="font-bold text-success">{opts?.text_answer}</span>
                           </div>
-                        );
-                      })}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -215,4 +283,28 @@ function renderMarkdownish(text: string) {
 function renderInline(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>));
+}
+
+function DualLanguageMarkdown({ content }: { content: string }) {
+  const [lang, setLang] = useState<"pt" | "en">("pt");
+
+  if (!content.includes(":::pt") && !content.includes(":::en")) {
+    return <article className="prose-content space-y-3 text-[15px] leading-relaxed">{renderMarkdownish(content)}</article>;
+  }
+
+  const parts = content.split(/(?=:::[a-z]+)/);
+  const ptContent = parts.find(p => p.startsWith(":::pt"))?.replace(/^:::pt\s*/, "") ?? "";
+  const enContent = parts.find(p => p.startsWith(":::en"))?.replace(/^:::en\s*/, "") ?? "";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-start gap-2 border-b-2 pb-3">
+        <button onClick={() => setLang("pt")} className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${lang === "pt" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>🇧🇷 Português</button>
+        <button onClick={() => setLang("en")} className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${lang === "en" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>🇬🇧 Inglês</button>
+      </div>
+      <article className="prose-content space-y-3 text-[15px] leading-relaxed">
+        {renderMarkdownish(lang === "en" ? (enContent || ptContent) : ptContent)}
+      </article>
+    </div>
+  );
 }
