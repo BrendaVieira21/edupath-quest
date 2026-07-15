@@ -54,12 +54,18 @@ function EditWrapper({ editId }: { editId: string }) {
   return <LessonForm editId={editId} initial={data} />;
 }
 
+type LessonData = {
+  lesson: import("@/lib/queries").Lesson | null;
+  questions: import("@/lib/queries").QuizQuestion[];
+  attachments: import("@/lib/queries").Attachment[];
+};
+
 function LessonForm({
   editId,
   initial,
 }: {
   editId?: string;
-  initial?: Awaited<ReturnType<ReturnType<typeof lessonQuery>["queryFn"]>>;
+  initial?: LessonData;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
