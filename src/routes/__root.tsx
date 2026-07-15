@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { AppProvider } from "@/lib/app-store";
+
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -100,10 +100,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AppProvider>
-        <Outlet />
-        <Toaster />
-      </AppProvider>
+      <Outlet />
+      <Toaster />
     </QueryClientProvider>
   );
 }

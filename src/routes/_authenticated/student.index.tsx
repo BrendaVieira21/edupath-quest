@@ -1,34 +1,32 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useApp } from "@/lib/app-store";
+import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
 import { Progress } from "@/components/ui/progress";
 import { Check, Lock, Star } from "lucide-react";
+import { lessonsQuery, myProgressQuery, myRoleQuery } from "@/lib/queries";
 
-export const Route = createFileRoute("/student/")({ component: StudentPage });
+export const Route = createFileRoute("/_authenticated/student/")({ component: StudentPage });
 
 function StudentPage() {
-  const app = useApp();
   const navigate = useNavigate();
-  const student = app.currentStudent();
+  const { data: role } = useQuery(myRoleQuery());
+  const { data: lessons = [] } = useQuery(lessonsQuery());
+  const { data: progress = [] } = useQuery(myProgressQuery());
 
   useEffect(() => {
-    if (app.hydrated && app.session?.kind !== "student") navigate({ to: "/" });
-  }, [app.hydrated, app.session, navigate]);
+    if (role === "teacher") navigate({ to: "/teacher" });
+  }, [role, navigate]);
 
-  if (!app.hydrated) return null;
-  if (!student) return null;
-
-  const total = app.lessons.length;
-  const done = student.completedLessons.length;
+  const completedIds = new Set(progress.filter((p) => p.completed_at).map((p) => p.lesson_id));
+  const total = lessons.length;
+  const done = completedIds.size;
   const pct = total ? Math.round((done / total) * 100) : 0;
-
-  // First non-completed lesson is the "current" unlocked one
-  const currentIdx = app.lessons.findIndex((l) => !student.completedLessons.includes(l.id));
+  const currentIdx = lessons.findIndex((l) => !completedIds.has(l.id));
 
   return (
     <div className="min-h-screen pb-16">
-      <AppHeader title="Student" subtitle="Your learning path" />
+      <AppHeader title="Student" subtitle="Your learning path" mode="student" />
 
       <div className="mx-auto max-w-3xl px-4 pt-6">
         <div className="rounded-3xl border-2 bg-card p-5 shadow-sm">
@@ -45,8 +43,8 @@ function StudentPage() {
         </div>
 
         <ol className="relative mt-10 space-y-10">
-          {app.lessons.map((lesson, i) => {
-            const isDone = student.completedLessons.includes(lesson.id);
+          {lessons.map((lesson, i) => {
+            const isDone = completedIds.has(lesson.id);
             const isCurrent = i === currentIdx;
             const isLocked = !isDone && !isCurrent;
             const alignRight = i % 2 === 1;
@@ -54,11 +52,9 @@ function StudentPage() {
             return (
               <li key={lesson.id} className={`flex items-center ${alignRight ? "justify-end" : "justify-start"}`}>
                 <div className={`flex w-full max-w-md items-center gap-4 ${alignRight ? "flex-row-reverse" : ""}`}>
-                  <PathNode lesson={lesson} state={isDone ? "done" : isCurrent ? "current" : "locked"} disabled={isLocked} />
+                  <PathNode emoji={lesson.emoji} state={isDone ? "done" : isCurrent ? "current" : "locked"} />
                   <div className={`flex-1 ${alignRight ? "text-right" : ""}`}>
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Phase {i + 1}
-                    </div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Phase {i + 1}</div>
                     <div className="text-lg font-bold">{lesson.title}</div>
                     <div className="text-sm text-muted-foreground">{lesson.description}</div>
                     {!isLocked ? (
@@ -85,25 +81,11 @@ function StudentPage() {
   );
 }
 
-function PathNode({ lesson, state, disabled }: { lesson: { emoji: string }; state: "done" | "current" | "locked"; disabled: boolean }) {
+function PathNode({ emoji, state }: { emoji: string; state: "done" | "current" | "locked" }) {
   const base = "grid h-20 w-20 shrink-0 place-items-center rounded-full text-3xl select-none";
-  if (state === "done") {
-    return (
-      <div className={`${base} bg-success text-success-foreground node-shadow-done`}>
-        <Check className="h-8 w-8" strokeWidth={3} />
-      </div>
-    );
-  }
-  if (state === "current") {
-    return (
-      <div className={`${base} bg-primary text-primary-foreground node-shadow animate-pulse`}>
-        {lesson.emoji}
-      </div>
-    );
-  }
-  return (
-    <div className={`${base} bg-muted text-muted-foreground node-shadow-locked ${disabled ? "opacity-70" : ""}`}>
-      <Lock className="h-7 w-7" />
-    </div>
-  );
+  if (state === "done")
+    return <div className={`${base} bg-success text-success-foreground node-shadow-done`}><Check className="h-8 w-8" strokeWidth={3} /></div>;
+  if (state === "current")
+    return <div className={`${base} bg-primary text-primary-foreground node-shadow animate-pulse`}>{emoji}</div>;
+  return <div className={`${base} bg-muted text-muted-foreground node-shadow-locked opacity-70`}><Lock className="h-7 w-7" /></div>;
 }

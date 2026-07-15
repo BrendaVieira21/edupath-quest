@@ -1,0 +1,255 @@
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { AppHeader } from "@/components/AppHeader";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Plus, Users, BookOpen, Pencil, ArrowUp, ArrowDown, Copy, UserPlus, Trophy, Activity } from "lucide-react";
+import { toast } from "sonner";
+import { lessonsQuery, myRoleQuery } from "@/lib/queries";
+import { createStudent, listStudents } from "@/lib/teacher.functions";
+
+export const Route = createFileRoute("/_authenticated/teacher/")({ component: TeacherPage });
+
+function TeacherPage() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data: role, isLoading: roleLoading } = useQuery(myRoleQuery());
+  const { data: lessons = [] } = useQuery(lessonsQuery());
+  const listStudentsFn = useServerFn(listStudents);
+  const { data: students = [] } = useQuery({
+    queryKey: ["students"],
+    queryFn: () => listStudentsFn(),
+    enabled: role === "teacher",
+  });
+
+  useEffect(() => {
+    if (!roleLoading && role !== "teacher") navigate({ to: "/student" });
+  }, [role, roleLoading, navigate]);
+
+  const total = lessons.length;
+  const activeThisWeek = students.filter((s) => {
+    if (!s.lastActivity) return false;
+    return new Date(s.lastActivity).getTime() > Date.now() - 7 * 86400_000;
+  }).length;
+  const avgPct =
+    students.length && total
+      ? Math.round(students.reduce((a, s) => a + s.completedCount / total, 0) / students.length * 100)
+      : 0;
+
+  async function moveLesson(id: string, dir: -1 | 1) {
+    const idx = lessons.findIndex((l) => l.id === id);
+    const target = idx + dir;
+    if (idx < 0 || target < 0 || target >= lessons.length) return;
+    const a = lessons[idx];
+    const b = lessons[target];
+    // swap order_index
+    await Promise.all([
+      supabase.from("lessons").update({ order_index: b.order_index }).eq("id", a.id),
+      supabase.from("lessons").update({ order_index: a.order_index }).eq("id", b.id),
+    ]);
+    qc.invalidateQueries({ queryKey: lessonsQuery().queryKey });
+  }
+
+  async function duplicateLesson(lessonId: string) {
+    const { data: original } = await supabase.from("lessons").select("*").eq("id", lessonId).maybeSingle();
+    if (!original) return;
+    const { data: qs } = await supabase.from("quiz_questions").select("*").eq("lesson_id", lessonId);
+    const maxOrder = Math.max(0, ...lessons.map((l) => l.order_index));
+    const { data: inserted, error } = await supabase
+      .from("lessons")
+      .insert({
+        title: original.title + " (copy)",
+        emoji: original.emoji,
+        description: original.description,
+        content: original.content,
+        order_index: maxOrder + 1,
+      })
+      .select()
+      .single();
+    if (error || !inserted) return toast.error(error?.message ?? "Failed");
+    if (qs && qs.length) {
+      await supabase.from("quiz_questions").insert(
+        qs.map((q) => ({
+          lesson_id: inserted.id,
+          question: q.question,
+          options: q.options,
+          correct_index: q.correct_index,
+          position: q.position,
+        })),
+      );
+    }
+    qc.invalidateQueries({ queryKey: lessonsQuery().queryKey });
+    toast.success("Lesson duplicated");
+  }
+
+  return (
+    <div className="min-h-screen pb-16">
+      <AppHeader title="Teacher" subtitle="Manage lessons & students" mode="teacher" />
+      <div className="mx-auto max-w-5xl px-4 pt-6">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl">Teacher dashboard</h1>
+            <p className="text-sm text-muted-foreground">Create lessons and track student progress.</p>
+          </div>
+          <Link to="/teacher/new-lesson">
+            <Button className="rounded-2xl py-6 px-5 text-sm font-bold btn-pop">
+              <Plus className="mr-1 h-4 w-4" /> New lesson
+            </Button>
+          </Link>
+        </div>
+
+        {/* summary */}
+        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          <SummaryCard icon={<Users className="h-4 w-4" />} label="Students" value={students.length} />
+          <SummaryCard icon={<Activity className="h-4 w-4" />} label="Active this week" value={activeThisWeek} />
+          <SummaryCard icon={<Trophy className="h-4 w-4" />} label="Avg progress" value={`${avgPct}%`} />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="rounded-3xl border-2 p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/20 text-primary"><BookOpen className="h-5 w-5" /></div>
+              <h2 className="text-lg">Lessons ({total})</h2>
+            </div>
+            <div className="space-y-2">
+              {lessons.length === 0 && (
+                <p className="rounded-2xl border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No lessons yet. Click <b>New lesson</b> to create your first phase.
+                </p>
+              )}
+              {lessons.map((l, i) => (
+                <div key={l.id} className="flex items-center gap-2 rounded-2xl border-2 p-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-xl">{l.emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate text-sm font-bold">Phase {i + 1}: {l.title}</div>
+                    <div className="truncate text-xs text-muted-foreground">{l.description}</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={i === 0} onClick={() => moveLesson(l.id, -1)} title="Move up">
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={i === lessons.length - 1} onClick={() => moveLesson(l.id, 1)} title="Move down">
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => duplicateLesson(l.id)} title="Duplicate">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Link to="/teacher/new-lesson" search={{ id: l.id }}>
+                      <Button variant="outline" size="sm" className="rounded-xl">
+                        <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="rounded-3xl border-2 p-5">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary/30 text-secondary-foreground"><Users className="h-5 w-5" /></div>
+                <h2 className="text-lg">Students ({students.length})</h2>
+              </div>
+              <CreateStudentDialog />
+            </div>
+            <div className="overflow-hidden rounded-2xl border-2">
+              <table className="w-full text-sm">
+                <thead className="bg-muted text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">Student</th>
+                    <th className="px-3 py-2">Progress</th>
+                    <th className="px-3 py-2 text-right">Done</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((s) => {
+                    const pct = total ? Math.round((s.completedCount / total) * 100) : 0;
+                    return (
+                      <tr key={s.id} className="border-t hover:bg-accent/40">
+                        <td className="px-3 py-3">
+                          <Link to="/teacher/students/$studentId" params={{ studentId: s.id }} className="block">
+                            <div className="font-bold">{s.fullName || "(no name)"}</div>
+                            <div className="text-xs text-muted-foreground">{s.email}</div>
+                          </Link>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">{pct}%</div>
+                        </td>
+                        <td className="px-3 py-3 text-right font-bold">{s.completedCount}/{total}</td>
+                      </tr>
+                    );
+                  })}
+                  {students.length === 0 && (
+                    <tr><td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">No students yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+  return (
+    <Card className="rounded-2xl border-2 p-4">
+      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        {icon} {label}
+      </div>
+      <div className="mt-1 text-2xl font-extrabold">{value}</div>
+    </Card>
+  );
+}
+
+function CreateStudentDialog() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const qc = useQueryClient();
+  const createFn = useServerFn(createStudent);
+  const mut = useMutation({
+    mutationFn: () => createFn({ data: { fullName: name, email, password } }),
+    onSuccess: () => {
+      toast.success("Student created!");
+      qc.invalidateQueries({ queryKey: ["students"] });
+      setOpen(false);
+      setName(""); setEmail(""); setPassword("");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="rounded-xl btn-pop"><UserPlus className="mr-1 h-4 w-4" /> Add student</Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-3xl">
+        <DialogHeader><DialogTitle>Add a new student</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5"><Label>Full name</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl" /></div>
+          <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-xl" /></div>
+          <div className="space-y-1.5"><Label>Temporary password (min 6)</Label><Input value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-xl" /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Cancel</Button>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="rounded-xl btn-pop">
+            {mut.isPending ? "Creating..." : "Create student"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

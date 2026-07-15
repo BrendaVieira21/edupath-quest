@@ -1,12 +1,35 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useApp } from "@/lib/app-store";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
-export function AppHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  const app = useApp();
+export function AppHeader({ title, subtitle, mode }: { title: string; subtitle?: string; mode?: "student" | "teacher" }) {
   const navigate = useNavigate();
-  const student = app.currentStudent();
+  const qc = useQueryClient();
+  const [name, setName] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+      setName(profile?.full_name ?? "");
+    })();
+  }, []);
+
+  async function signOut() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -18,22 +41,17 @@ export function AppHeader({ title, subtitle }: { title: string; subtitle?: strin
           </div>
         </Link>
         <div className="flex items-center gap-2">
-          {student && (
+          {name && mode === "student" && (
             <div className="hidden rounded-full bg-accent px-3 py-1 text-xs font-bold sm:block">
-              Hi, {student.name.split(" ")[0]} 👋
+              Hi, {name.split(" ")[0]} 👋
             </div>
           )}
-          {app.session?.kind === "teacher" && (
+          {mode === "teacher" && (
             <div className="hidden rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground sm:block">
               Teacher mode
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="rounded-xl"
-            onClick={() => { app.logout(); navigate({ to: "/" }); }}
-          >
+          <Button variant="ghost" size="sm" className="rounded-xl" onClick={signOut}>
             <LogOut className="mr-1 h-4 w-4" /> Logout
           </Button>
         </div>
