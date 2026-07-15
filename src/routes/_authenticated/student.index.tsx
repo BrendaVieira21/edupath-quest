@@ -26,14 +26,14 @@ function StudentPage() {
 
   return (
     <div className="min-h-screen pb-16">
-      <AppHeader title="Student" subtitle="Your learning path" mode="student" />
+      <AppHeader title="Aluno(a)" subtitle="Sua trilha de aprendizado" mode="student" />
 
       <div className="mx-auto max-w-3xl px-4 pt-6">
         <div className="rounded-3xl border-2 bg-card p-5 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl">Your journey</h2>
-              <p className="text-sm text-muted-foreground">{done} of {total} phases completed</p>
+              <h2 className="text-2xl">Sua jornada</h2>
+              <p className="text-sm text-muted-foreground">{done} de {total} fases concluídas</p>
             </div>
             <div className="flex items-center gap-1 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
               <Star className="h-4 w-4 fill-current" /> {done * 10} XP
@@ -54,7 +54,7 @@ function StudentPage() {
                 <div className={`flex w-full max-w-md items-center gap-4 ${alignRight ? "flex-row-reverse" : ""}`}>
                   <PathNode emoji={lesson.emoji} state={isDone ? "done" : isCurrent ? "current" : "locked"} />
                   <div className={`flex-1 ${alignRight ? "text-right" : ""}`}>
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Phase {i + 1}</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fase {i + 1}</div>
                     <div className="text-lg font-bold">{lesson.title}</div>
                     <div className="text-sm text-muted-foreground">{lesson.description}</div>
                     {!isLocked ? (
@@ -63,11 +63,11 @@ function StudentPage() {
                         params={{ lessonId: lesson.id }}
                         className="mt-2 inline-block rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground btn-pop"
                       >
-                        {isDone ? "Review" : "Start"}
+                        {isDone ? "Revisar" : "Começar"}
                       </Link>
                     ) : (
                       <div className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                        <Lock className="h-3 w-3" /> Locked
+                        <Lock className="h-3 w-3" /> Bloqueada
                       </div>
                     )}
                   </div>

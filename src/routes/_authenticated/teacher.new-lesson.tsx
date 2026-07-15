@@ -44,9 +44,9 @@ function EditWrapper({ editId }: { editId: string }) {
   if (!data?.lesson) {
     return (
       <div className="min-h-screen">
-        <AppHeader title="Edit lesson" mode="teacher" />
+        <AppHeader title="Editar fase" mode="teacher" />
         <div className="mx-auto max-w-2xl px-4 py-10 text-center text-muted-foreground">
-          Lesson not found. <Link to="/teacher" className="text-primary underline">Back to dashboard</Link>
+          Fase não encontrada. <Link to="/teacher" className="text-primary underline">Voltar para o painel</Link>
         </div>
       </div>
     );
@@ -76,7 +76,7 @@ function LessonForm({
   const [description, setDescription] = useState(editing?.description ?? "");
   const [content, setContent] = useState(
     editing?.content ??
-      "## Welcome!\n\nWrite your lesson here. Use **bold** and bullet points.\n\n- First point\n- Second point",
+      "## Bem-vindo(a)!\n\nEscreva sua fase aqui. Use **negrito** e marcadores.\n\n- Primeiro ponto\n- Segundo ponto",
   );
   const [attachments, setAttachments] = useState<{ id?: string; name: string; url: string }[]>(
     initial?.attachments?.map((a) => ({ id: a.id, name: a.name, url: a.url })) ?? [],
@@ -102,10 +102,10 @@ function LessonForm({
   }
 
   async function save() {
-    if (!title.trim()) return toast.error("Add a title.");
-    if (questions.length === 0) return toast.error("Add at least one question.");
+    if (!title.trim()) return toast.error("Adicione um título.");
+    if (questions.length === 0) return toast.error("Adicione pelo menos uma questão.");
     if (questions.some((q) => !q.question.trim() || q.options.some((o) => !o.trim()))) {
-      return toast.error("Fill in every question and option.");
+      return toast.error("Preencha todas as questões e opções.");
     }
     setSaving(true);
     try {
@@ -151,11 +151,11 @@ function LessonForm({
 
       qc.invalidateQueries({ queryKey: lessonsQuery().queryKey });
       qc.invalidateQueries({ queryKey: ["lesson", lessonId!] });
-      toast.success(editing ? "Lesson updated!" : "Lesson published!");
+      toast.success(editing ? "Fase atualizada!" : "Fase publicada!");
       navigate({ to: "/teacher" });
     } catch (e) {
       const err = e as Error;
-      toast.error(err.message ?? "Failed to save");
+      toast.error(err.message ?? "Falha ao salvar");
     } finally {
       setSaving(false);
     }
@@ -163,36 +163,36 @@ function LessonForm({
 
   async function remove() {
     if (!editing) return;
-    if (!confirm(`Delete "${editing.title}"? Students' progress for this lesson will be removed.`)) return;
+    if (!confirm(`Excluir "${editing.title}"? O progresso dos alunos nesta fase será removido.`)) return;
     const { error } = await supabase.from("lessons").delete().eq("id", editing.id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: lessonsQuery().queryKey });
-    toast.success("Lesson deleted.");
+    toast.success("Fase excluída.");
     navigate({ to: "/teacher" });
   }
 
   return (
     <div className="min-h-screen pb-16">
-      <AppHeader title={editing ? "Edit lesson" : "New lesson"} subtitle={editing ? "Update a phase" : "Build a new phase"} mode="teacher" />
+      <AppHeader title={editing ? "Editar fase" : "Nova fase"} subtitle={editing ? "Atualizar uma fase" : "Criar uma nova fase"} mode="teacher" />
       <div className="mx-auto max-w-3xl px-4 pt-6">
         <Link to="/teacher" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
 
         <Card className="rounded-3xl border-2 p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h1 className="text-2xl">{editing ? "Edit phase" : "Create a new phase"}</h1>
+            <h1 className="text-2xl">{editing ? "Editar fase" : "Criar uma nova fase"}</h1>
             {editing && (
               <Button variant="outline" size="sm" onClick={remove} className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10">
-                <Trash2 className="mr-1 h-4 w-4" /> Delete
+                <Trash2 className="mr-1 h-4 w-4" /> Excluir
               </Button>
             )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-[1fr_auto]">
             <div className="space-y-1.5">
-              <Label>Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Past tense basics" className="rounded-xl" />
+              <Label>Título</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex. Básico do passado" className="rounded-xl" />
             </div>
             <div className="space-y-1.5">
               <Label>Emoji</Label>
@@ -201,19 +201,19 @@ function LessonForm({
           </div>
 
           <div className="mt-4 space-y-1.5">
-            <Label>Short description</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-xl" placeholder="One sentence shown on the path" />
+            <Label>Descrição curta</Label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-xl" placeholder="Uma frase exibida na trilha" />
           </div>
 
           <div className="mt-4 space-y-1.5">
-            <Label>Lesson content (Markdown: ## headings, **bold**, bullets)</Label>
+            <Label>Conteúdo (Markdown: ## títulos, **negrito**, listas)</Label>
             <Textarea value={content} onChange={(e) => setContent(e.target.value)} className="min-h-[180px] rounded-xl font-mono text-sm" />
           </div>
 
           <div className="mt-4">
-            <Label className="mb-1.5 block">Materials</Label>
+            <Label className="mb-1.5 block">Materiais</Label>
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-6 text-sm font-semibold text-muted-foreground hover:bg-accent">
-              <Upload className="h-4 w-4" /> Upload files (local preview only)
+              <Upload className="h-4 w-4" /> Enviar arquivos (apenas pré-visualização local)
               <input type="file" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
             </label>
             {attachments.length > 0 && (
@@ -232,10 +232,10 @@ function LessonForm({
 
           <div className="mt-8">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg">Quiz</h2>
+              <h2 className="text-lg">Teste</h2>
               <Button variant="outline" size="sm" className="rounded-xl"
                 onClick={() => setQuestions((qs) => [...qs, { id: crypto.randomUUID(), question: "", options: ["", "", "", ""], correctIndex: 0 }])}>
-                <Plus className="mr-1 h-4 w-4" /> Add question
+                <Plus className="mr-1 h-4 w-4" /> Adicionar questão
               </Button>
             </div>
 
@@ -243,14 +243,14 @@ function LessonForm({
               {questions.map((q, qi) => (
                 <div key={q.id} className="rounded-2xl border-2 p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Question {qi + 1}</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
                     {questions.length > 1 && (
                       <button onClick={() => setQuestions((qs) => qs.filter((x) => x.id !== q.id))} className="text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <Input value={q.question} onChange={(e) => updateQ(q.id, { question: e.target.value })} placeholder="Type your question" className="mb-3 rounded-xl" />
+                  <Input value={q.question} onChange={(e) => updateQ(q.id, { question: e.target.value })} placeholder="Digite sua pergunta" className="mb-3 rounded-xl" />
                   <div className="grid gap-2">
                     {q.options.map((opt, oi) => {
                       const isCorrect = q.correctIndex === oi;
@@ -258,7 +258,7 @@ function LessonForm({
                         <div key={oi} className="flex items-center gap-2">
                           <button type="button" onClick={() => updateQ(q.id, { correctIndex: oi })}
                             className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 ${isCorrect ? "border-success bg-success text-success-foreground" : "bg-muted"}`}
-                            title="Mark as correct">
+                            title="Marcar como correta">
                             {isCorrect ? <Check className="h-4 w-4" strokeWidth={3} /> : <span className="text-xs font-bold">{String.fromCharCode(65 + oi)}</span>}
                           </button>
                           <Input value={opt}
@@ -267,21 +267,21 @@ function LessonForm({
                               next[oi] = e.target.value;
                               updateQ(q.id, { options: next });
                             }}
-                            placeholder={`Option ${oi + 1}`} className="rounded-xl" />
+                            placeholder={`Opção ${oi + 1}`} className="rounded-xl" />
                         </div>
                       );
                     })}
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Tap the letter to mark the correct answer.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Toque na letra para marcar a resposta correta.</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="mt-8 flex justify-end gap-3">
-            <Button variant="outline" className="rounded-2xl" onClick={() => navigate({ to: "/teacher" })}>Cancel</Button>
+            <Button variant="outline" className="rounded-2xl" onClick={() => navigate({ to: "/teacher" })}>Cancelar</Button>
             <Button onClick={save} disabled={saving} className="rounded-2xl px-6 py-6 font-bold btn-pop">
-              {saving ? "Saving..." : editing ? "Save changes" : "Publish lesson"}
+              {saving ? "Salvando..." : editing ? "Salvar alterações" : "Publicar fase"}
             </Button>
           </div>
         </Card>

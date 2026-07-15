@@ -43,16 +43,16 @@ export function AppHeader({ title, subtitle, mode }: { title: string; subtitle?:
         <div className="flex items-center gap-2">
           {name && mode === "student" && (
             <div className="hidden rounded-full bg-accent px-3 py-1 text-xs font-bold sm:block">
-              Hi, {name.split(" ")[0]} 👋
+              Olá, {name.split(" ")[0]} 👋
             </div>
           )}
           {mode === "teacher" && (
             <div className="hidden rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground sm:block">
-              Teacher mode
+              Modo Professor
             </div>
           )}
           <Button variant="ghost" size="sm" className="rounded-xl" onClick={signOut}>
-            <LogOut className="mr-1 h-4 w-4" /> Logout
+            <LogOut className="mr-1 h-4 w-4" /> Sair
           </Button>
         </div>
       </div>

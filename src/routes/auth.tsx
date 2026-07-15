@@ -43,30 +43,30 @@ function AuthPage() {
         <div className="grid items-center gap-10 md:grid-cols-2">
           <section>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
-              <Sparkles className="h-3.5 w-3.5" /> Gamified English learning
+              <Sparkles className="h-3.5 w-3.5" /> Aprendizado de inglês gamificado
             </div>
             <h1 className="text-4xl md:text-6xl leading-tight">
-              Learn English,
+              Aprenda inglês,
               <br />
-              <span className="text-primary">one playful</span>
+              <span className="text-primary">um passo divertido</span>
               <br />
-              <span className="text-secondary">step at a time.</span>
+              <span className="text-secondary">de cada vez.</span>
             </h1>
             <p className="mt-5 max-w-md text-base text-muted-foreground">
-              Bite-sized lessons, fun quizzes and a learning path that keeps you coming back.
+              Fases rápidas, testes divertidos e uma trilha que te motiva a voltar sempre.
             </p>
             <div className="mt-8 grid max-w-md grid-cols-3 gap-3">
-              <Feature icon={<BookOpen className="h-5 w-5" />} label="Lessons" />
-              <Feature icon={<Trophy className="h-5 w-5" />} label="Quizzes" />
-              <Feature icon={<GraduationCap className="h-5 w-5" />} label="Progress" />
+              <Feature icon={<BookOpen className="h-5 w-5" />} label="Fases" />
+              <Feature icon={<Trophy className="h-5 w-5" />} label="Testes" />
+              <Feature icon={<GraduationCap className="h-5 w-5" />} label="Progresso" />
             </div>
           </section>
 
           <Card className="rounded-3xl border-2 p-6 shadow-xl">
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-muted p-1">
-                <TabsTrigger value="login" className="rounded-xl">Log in</TabsTrigger>
-                <TabsTrigger value="signup" className="rounded-xl">Sign up</TabsTrigger>
+                <TabsTrigger value="login" className="rounded-xl">Entrar</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-xl">Criar conta</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-5">
@@ -106,20 +106,20 @@ function LoginForm({ onDone }: { onDone: () => void }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         setLoading(false);
         if (error) return toast.error(error.message);
-        toast.success("Welcome back!");
+        toast.success("Bem-vindo(a) de volta!");
         onDone();
       }}
     >
       <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">E-mail</Label>
         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="rounded-xl" />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">Senha</Label>
         <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="rounded-xl" />
       </div>
       <Button type="submit" disabled={loading} className="w-full rounded-2xl py-6 text-base font-bold btn-pop">
-        {loading ? "Signing in..." : "Log in"}
+        {loading ? "Entrando..." : "Entrar"}
       </Button>
     </form>
   );
@@ -151,50 +151,50 @@ function SignupForm({ onDone }: { onDone: () => void }) {
         const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
         if (loginErr) {
           setLoading(false);
-          toast.success("Account created! Please log in.");
+          toast.success("Conta criada! Por favor, faça login.");
           return;
         }
 
         if (asTeacher) {
           try {
             await claim({ data: { code: inviteCode } });
-            toast.success("Welcome, teacher!");
+            toast.success("Bem-vindo(a), professor(a)!");
           } catch (err) {
-            toast.error("Invalid invite code — created as student instead.");
+            toast.error("Código de convite inválido — conta criada como aluno.");
           }
         } else {
-          toast.success("Account created! Let's learn.");
+          toast.success("Conta criada! Vamos aprender.");
         }
         setLoading(false);
         onDone();
       }}
     >
       <div className="space-y-1.5">
-        <Label htmlFor="name">Your name</Label>
+        <Label htmlFor="name">Seu nome</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="rounded-xl" />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="su-email">Email</Label>
+        <Label htmlFor="su-email">E-mail</Label>
         <Input id="su-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="rounded-xl" />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="su-password">Password (min 6)</Label>
+        <Label htmlFor="su-password">Senha (mín 6)</Label>
         <Input id="su-password" type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required className="rounded-xl" />
       </div>
 
       <div className="flex items-center gap-2 rounded-xl bg-muted/50 p-3">
         <Checkbox id="asTeacher" checked={asTeacher} onCheckedChange={(v) => setAsTeacher(!!v)} />
-        <Label htmlFor="asTeacher" className="text-sm">I'm a teacher (invite code required)</Label>
+        <Label htmlFor="asTeacher" className="text-sm">Sou professor(a) (código de convite necessário)</Label>
       </div>
       {asTeacher && (
         <div className="space-y-1.5">
-          <Label htmlFor="invite">Invite code</Label>
+          <Label htmlFor="invite">Código de convite</Label>
           <Input id="invite" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} className="rounded-xl" />
         </div>
       )}
 
       <Button type="submit" disabled={loading} className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground btn-pop btn-pop-lavender hover:bg-secondary/90">
-        {loading ? "Creating..." : "Create account"}
+        {loading ? "Criando..." : "Criar conta"}
       </Button>
     </form>
   );

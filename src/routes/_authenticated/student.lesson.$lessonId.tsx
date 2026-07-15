@@ -26,14 +26,14 @@ function LessonPage() {
     return data.questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_index ? 1 : 0), 0);
   }, [answers, data]);
 
-  if (isLoading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Carregando...</div>;
   if (!data?.lesson) {
     return (
       <div className="min-h-screen">
-        <AppHeader title="Lesson" mode="student" />
+        <AppHeader title="Fase" mode="student" />
         <div className="mx-auto max-w-2xl px-4 py-10 text-center">
-          <p className="text-muted-foreground">Lesson not found.</p>
-          <Link to="/student" className="mt-4 inline-block text-primary underline">Back to path</Link>
+          <p className="text-muted-foreground">Fase não encontrada.</p>
+          <Link to="/student" className="mt-4 inline-block text-primary underline">Voltar para a trilha</Link>
         </div>
       </div>
     );
@@ -42,7 +42,7 @@ function LessonPage() {
 
   async function submit() {
     const unanswered = questions.some((q) => answers[q.id] === undefined);
-    if (unanswered) return toast.error("Answer all questions first.");
+    if (unanswered) return toast.error("Responda todas as perguntas primeiro.");
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
 
@@ -76,7 +76,7 @@ function LessonPage() {
       <AppHeader title={lesson.title} mode="student" />
       <div className="mx-auto max-w-2xl px-4 pt-6">
         <Link to="/student" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to path
+          <ArrowLeft className="h-4 w-4" /> Voltar para a trilha
         </Link>
 
         <Card className="rounded-3xl border-2 p-6">
@@ -95,7 +95,7 @@ function LessonPage() {
               </article>
               {attachments.length > 0 && (
                 <div className="mt-6">
-                  <div className="mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Materials</div>
+                  <div className="mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Materiais</div>
                   <div className="space-y-2">
                     {attachments.map((a) => (
                       <a key={a.id} href={a.url} download={a.name} className="flex items-center justify-between rounded-2xl border-2 px-4 py-3 hover:bg-accent">
@@ -108,7 +108,7 @@ function LessonPage() {
               )}
               <div className="mt-8 flex justify-end">
                 <Button onClick={() => { setMode("quiz"); setAnswers({}); }} disabled={questions.length === 0} className="rounded-2xl px-6 py-6 text-base font-bold btn-pop">
-                  {questions.length === 0 ? "No quiz yet" : "Start quiz →"}
+                  {questions.length === 0 ? "Sem teste ainda" : "Iniciar teste →"}
                 </Button>
               </div>
             </>
@@ -118,7 +118,7 @@ function LessonPage() {
             <div className="space-y-6">
               {questions.map((q, qi) => (
                 <div key={q.id} className="rounded-2xl border-2 bg-background/50 p-4">
-                  <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Question {qi + 1}</div>
+                  <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
                   <div className="mb-3 font-bold">{q.question}</div>
                   <div className="grid gap-2">
                     {q.options.map((opt, oi) => {
@@ -133,7 +133,7 @@ function LessonPage() {
                   </div>
                 </div>
               ))}
-              <Button onClick={submit} className="w-full rounded-2xl py-6 text-base font-bold btn-pop">Submit answers</Button>
+              <Button onClick={submit} className="w-full rounded-2xl py-6 text-base font-bold btn-pop">Enviar respostas</Button>
             </div>
           )}
 
@@ -145,7 +145,7 @@ function LessonPage() {
                 </div>
                 <div className="text-3xl font-extrabold">{correctCount} / {questions.length}</div>
                 <div className="text-sm text-muted-foreground">
-                  {correctCount === questions.length ? "Perfect! 🎉" : "Nice work — review your mistakes below."}
+                  {correctCount === questions.length ? "Perfeito! 🎉" : "Bom trabalho — revise seus erros abaixo."}
                 </div>
               </div>
               {questions.map((q, qi) => {
@@ -155,7 +155,7 @@ function LessonPage() {
                   <div key={q.id} className={`rounded-2xl border-2 p-4 ${isRight ? "border-success bg-success/10" : "border-destructive/40 bg-destructive/5"}`}>
                     <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
                       {isRight ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-destructive" />}
-                      Question {qi + 1}
+                      Questão {qi + 1}
                     </div>
                     <div className="mb-3 font-bold">{q.question}</div>
                     <div className="grid gap-2">
@@ -177,8 +177,8 @@ function LessonPage() {
                 );
               })}
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => { setMode("quiz"); setAnswers({}); }} className="flex-1 rounded-2xl py-6 font-bold">Retry</Button>
-                <Button onClick={() => navigate({ to: "/student" })} className="flex-1 rounded-2xl py-6 font-bold btn-pop">Back to path</Button>
+                <Button variant="outline" onClick={() => { setMode("quiz"); setAnswers({}); }} className="flex-1 rounded-2xl py-6 font-bold">Tentar novamente</Button>
+                <Button onClick={() => navigate({ to: "/student" })} className="flex-1 rounded-2xl py-6 font-bold btn-pop">Voltar para a trilha</Button>
               </div>
             </div>
           )}

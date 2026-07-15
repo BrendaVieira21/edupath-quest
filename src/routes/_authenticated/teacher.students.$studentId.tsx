@@ -36,19 +36,19 @@ function StudentDetail() {
 
   return (
     <div className="min-h-screen pb-16">
-      <AppHeader title={detail.fullName || "Student"} subtitle="Progress detail" mode="teacher" />
+      <AppHeader title={detail.fullName || "Aluno(a)"} subtitle="Detalhes de progresso" mode="teacher" />
       <div className="mx-auto max-w-3xl px-4 pt-6">
         <button onClick={() => navigate({ to: "/teacher" })} className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to dashboard
+          <ArrowLeft className="h-4 w-4" /> Voltar para o painel
         </button>
 
         <Card className="rounded-3xl border-2 p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl">{detail.fullName || "(no name)"}</h1>
+              <h1 className="text-2xl">{detail.fullName || "(sem nome)"}</h1>
               <p className="text-sm text-muted-foreground">{detail.email}</p>
               <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
-                <Trophy className="h-4 w-4" /> {completed}/{total} phases · {completed * 10} XP
+                <Trophy className="h-4 w-4" /> {completed}/{total} fases · {completed * 10} XP
               </div>
             </div>
             <ResetPasswordDialog studentId={studentId} />
@@ -58,10 +58,10 @@ function StudentDetail() {
             <table className="w-full text-sm">
               <thead className="bg-muted text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-2">Phase</th>
-                  <th className="px-3 py-2">Score</th>
-                  <th className="px-3 py-2">Attempts</th>
-                  <th className="px-3 py-2">Last activity</th>
+                  <th className="px-3 py-2">Fase</th>
+                  <th className="px-3 py-2">Pontuação</th>
+                  <th className="px-3 py-2">Tentativas</th>
+                  <th className="px-3 py-2">Última atividade</th>
                 </tr>
               </thead>
               <tbody>
@@ -73,7 +73,7 @@ function StudentDetail() {
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{l.emoji}</span>
                           <div>
-                            <div className="text-xs text-muted-foreground">Phase {i + 1}</div>
+                            <div className="text-xs text-muted-foreground">Fase {i + 1}</div>
                             <div className="font-bold">{l.title}</div>
                           </div>
                         </div>
@@ -107,24 +107,24 @@ function ResetPasswordDialog({ studentId }: { studentId: string }) {
   const resetFn = useServerFn(resetStudentPassword);
   const mut = useMutation({
     mutationFn: () => resetFn({ data: { userId: studentId, newPassword: pw } }),
-    onSuccess: () => { toast.success("Password reset"); setOpen(false); setPw(""); },
+    onSuccess: () => { toast.success("Senha redefinida"); setOpen(false); setPw(""); },
     onError: (e: Error) => toast.error(e.message),
   });
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="rounded-xl"><KeyRound className="mr-1 h-4 w-4" /> Reset password</Button>
+        <Button variant="outline" size="sm" className="rounded-xl"><KeyRound className="mr-1 h-4 w-4" /> Redefinir senha</Button>
       </DialogTrigger>
       <DialogContent className="rounded-3xl">
-        <DialogHeader><DialogTitle>Reset student password</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Redefinir senha do aluno</DialogTitle></DialogHeader>
         <div className="space-y-1.5">
-          <Label>New temporary password</Label>
+          <Label>Nova senha temporária</Label>
           <Input value={pw} onChange={(e) => setPw(e.target.value)} minLength={6} className="rounded-xl" />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Cancelar</Button>
           <Button onClick={() => mut.mutate()} disabled={mut.isPending || pw.length < 6} className="rounded-xl btn-pop">
-            {mut.isPending ? "Resetting..." : "Reset"}
+            {mut.isPending ? "Redefinindo..." : "Redefinir"}
           </Button>
         </DialogFooter>
       </DialogContent>
