@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, KeyRound, Trophy } from "lucide-react";
+import { ArrowLeft, KeyRound, Trophy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getStudentDetail, resetStudentPassword } from "@/lib/teacher.functions";
+import { getStudentDetail, resetStudentPassword, deleteStudent } from "@/lib/teacher.functions";
 import { lessonsQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/teacher/students/$studentId")({
@@ -51,7 +51,22 @@ function StudentDetail() {
                 <Trophy className="h-4 w-4" /> {completed}/{total} fases · {completed * 10} XP
               </div>
             </div>
-            <ResetPasswordDialog studentId={studentId} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button variant="outline" size="sm" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={async () => {
+                if (window.confirm(`Tem certeza que deseja remover o aluno ${detail.fullName || detail.email}? Isso apagará todo o progresso dele e não pode ser desfeito.`)) {
+                  try {
+                    await deleteStudent({ data: { userId: studentId } });
+                    toast.success("Aluno removido com sucesso!");
+                    navigate({ to: "/teacher" });
+                  } catch (e: any) {
+                    toast.error(e.message);
+                  }
+                }
+              }}>
+                <Trash2 className="mr-1 h-4 w-4" /> Remover aluno
+              </Button>
+              <ResetPasswordDialog studentId={studentId} />
+            </div>
           </div>
 
           <div className="mt-6 overflow-hidden rounded-2xl border-2">
