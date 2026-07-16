@@ -110,6 +110,58 @@ function LessonForm({
   );
   const [saving, setSaving] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [aiHint, setAiHint] = useState("");
+  const [aiNumQ, setAiNumQ] = useState(5);
+  const [aiLoading, setAiLoading] = useState(false);
+  const generateFn = useServerFn(generateLessonFromMaterial);
+
+  async function runAI() {
+    if (!aiFile) return toast.error("Escolha um arquivo .pdf ou .txt");
+    setAiLoading(true);
+    try {
+      const isPdf = aiFile.type.includes("pdf") || aiFile.name.toLowerCase().endsWith(".pdf");
+      const payload: any = { hint: aiHint || undefined, numQuestions: aiNumQ };
+      if (isPdf) {
+        const buf = new Uint8Array(await aiFile.arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+        payload.pdfBase64 = btoa(bin);
+        payload.pdfMime = aiFile.type || "application/pdf";
+        payload.pdfName = aiFile.name;
+      } else {
+        payload.textContent = await aiFile.text();
+      }
+      const result = await generateFn({ data: payload });
+      setTitle(result.title);
+      setEmoji(result.emoji);
+      setDescription(result.description);
+      setContent(result.content);
+      setQuestions(
+        result.questions.map((q) => ({
+          id: crypto.randomUUID(),
+          type: q.type as QType,
+          question: q.question,
+          options: q.type.includes("choice")
+            ? [q.options[0] ?? "", q.options[1] ?? "", q.options[2] ?? "", q.options[3] ?? ""]
+            : ["", "", "", ""],
+          correctIndex: q.correctIndex,
+          textAnswer: q.textAnswer,
+          spokenText: q.spokenText,
+        })),
+      );
+      toast.success("Fase gerada! Revise antes de publicar.");
+      setAiOpen(false);
+      setAiFile(null);
+      setAiHint("");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
 
   function updateQ(id: string, patch: Partial<QDraft>) {
     setQuestions((qs) => qs.map((q) => (q.id === id ? { ...q, ...patch } : q)));
@@ -213,12 +265,54 @@ function LessonForm({
         <Card className="rounded-3xl border-2 p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h1 className="text-2xl">{editing ? "Editar fase" : "Criar uma nova fase"}</h1>
-            {editing && (
-              <Button variant="outline" size="sm" onClick={remove} className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10">
-                <Trash2 className="mr-1 h-4 w-4" /> Excluir
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="secondary" size="sm" className="rounded-xl btn-pop">
+                    <Sparkles className="mr-1 h-4 w-4" /> Criar com IA
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Gerar fase com IA</DialogTitle>
+                    <DialogDescription>
+                      Envie um PDF ou TXT com o material da aula. A IA vai criar título, conteúdo bilíngue e questões. Você pode editar tudo antes de publicar.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <label className="flex cursor-pointer items-center gap-2 rounded-2xl border-2 border-dashed p-4 text-sm hover:bg-accent">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1">
+                        <div className="font-semibold">{aiFile ? aiFile.name : "Selecionar arquivo .pdf ou .txt"}</div>
+                        <div className="text-xs text-muted-foreground">{aiFile ? `${Math.round(aiFile.size / 1024)} KB` : "Máx. ~10 MB"}</div>
+                      </div>
+                      <input type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => setAiFile(e.target.files?.[0] ?? null)} />
+                    </label>
+                    <div className="space-y-1.5">
+                      <Label>Instruções extras (opcional)</Label>
+                      <Textarea value={aiHint} onChange={(e) => setAiHint(e.target.value)} placeholder="Ex.: foco em verbo to be no presente; tom informal; nível A1" className="min-h-[80px] rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Número de questões: {aiNumQ}</Label>
+                      <input type="range" min={3} max={10} value={aiNumQ} onChange={(e) => setAiNumQ(Number(e.target.value))} className="w-full" />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setAiOpen(false)} className="rounded-xl" disabled={aiLoading}>Cancelar</Button>
+                    <Button onClick={runAI} disabled={aiLoading || !aiFile} className="rounded-xl btn-pop">
+                      {aiLoading ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Gerando...</> : <><Sparkles className="mr-1 h-4 w-4" /> Gerar fase</>}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              {editing && (
+                <Button variant="outline" size="sm" onClick={remove} className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10">
+                  <Trash2 className="mr-1 h-4 w-4" /> Excluir
+                </Button>
+              )}
+            </div>
           </div>
+
 
           <div className="grid gap-4 md:grid-cols-[1fr_auto]">
             <div className="space-y-1.5">
