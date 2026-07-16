@@ -36,7 +36,7 @@ export function AppHeader({ title, subtitle, mode }: { title: string; subtitle?:
         <Link to="/" className="flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-xl">🦉</div>
           <div className="leading-tight">
-            <div className="text-sm font-extrabold">LinguaPath</div>
+            <div className="text-sm font-extrabold">Brivio English</div>
             <div className="text-[11px] text-muted-foreground">{subtitle ?? title}</div>
           </div>
         </Link>

@@ -60,10 +60,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lingua Path — Learn English, level by level" },
+      { title: "Brivio English — Learn English, level by level" },
       { name: "description", content: "A gamified English learning platform with lessons, quizzes and progress tracking." },
-      { property: "og:title", content: "Lingua Path — Learn English, level by level" },
-      { name: "twitter:title", content: "Lingua Path — Learn English, level by level" },
+      { property: "og:title", content: "Brivio English — Learn English, level by level" },
+      { name: "twitter:title", content: "Brivio English — Learn English, level by level" },
       { property: "og:description", content: "A gamified English learning platform with lessons, quizzes and progress tracking." },
       { name: "twitter:description", content: "A gamified English learning platform with lessons, quizzes and progress tracking." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e1799c0f-e7f5-400b-b8fd-2ed6550c070b/id-preview-3b6f7adc--b79dfa8a-e503-4d44-be17-b19643a75b6d.lovable.app-1783259598627.png" },

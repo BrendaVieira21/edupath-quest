@@ -35,7 +35,7 @@ function AuthPage() {
           <div className="flex items-center gap-2">
             <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary text-2xl">🦉</div>
             <span className="text-2xl font-extrabold tracking-tight">
-              Lingua<span className="text-primary">Path</span>
+              Brivio<span className="text-primary"> English</span>
             </span>
           </div>
         </header>
