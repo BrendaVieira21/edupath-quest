@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Upload, Check, Volume2, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, Check, Volume2, Loader2, Sparkles, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { useServerFn } from "@tanstack/react-start";
 import { lessonQuery, lessonsQuery, myRoleQuery } from "@/lib/queries";
 import { getTTSAudio } from "@/lib/audio.functions";
+import { generateLessonFromMaterial } from "@/lib/lesson-ai.functions";
 
 type Search = { id?: string };
 
