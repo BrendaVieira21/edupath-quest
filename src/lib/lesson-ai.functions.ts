@@ -11,25 +11,28 @@ const Input = z.object({
 });
 
 const SYSTEM = `Você é um assistente que cria fases de um curso de inglês para brasileiros.
-A partir do material fornecido (PDF ou texto), gere UMA fase completa em português (explicações) com exemplos em inglês.
+A partir do material fornecido (PDF ou texto), gere UMA fase completa e didática.
 
 Responda APENAS com JSON válido, no formato:
 {
   "title": "string curta",
   "emoji": "1 emoji",
   "description": "1 frase curta que descreve a fase",
-  "content": "markdown bilíngue. Use blocos :::pt ... :::en ... para separar português e inglês. Inclua explicação clara, exemplos, e observações. Não use JSON aqui, apenas markdown.",
+  "content": "markdown bilíngue. OBRIGATÓRIO usar exatamente dois blocos: começa com ':::pt' (nova linha) versão em português, depois ':::en' (nova linha) versão em inglês. Cada bloco deve conter a AULA COMPLETA (explicações + exemplos + observações). NÃO fatie o conteúdo entre os blocos — o bloco :::en é a TRADUÇÃO/versão em inglês do :::pt, mantendo os mesmos exemplos em inglês nos dois blocos (exemplos em inglês não se traduzem). Use markdown: ##, ###, **negrito**, *itálico*, listas com '-'.",
   "questions": [
     {
       "type": "multiple_choice" | "writing" | "audio_choice" | "audio_writing",
-      "question": "enunciado em português (para audio_*, a pergunta pode ser 'Ouça e escreva o que foi dito' etc)",
-      "options": ["opção A", "opção B", "opção C", "opção D"],   // apenas para *_choice; use [] nos outros
-      "correctIndex": 0,                                           // índice em options (0-based); para writing use 0
-      "textAnswer": "resposta esperada",                            // apenas para *_writing; "" nos outros
-      "spokenText": "texto em inglês que será lido em voz alta"    // apenas para audio_*; "" nos outros
+      "question": "enunciado em português (para audio_*, algo como 'Ouça e escreva o que foi dito')",
+      "options": ["opção A", "opção B", "opção C", "opção D"],
+      "correctIndex": 0,
+      "textAnswer": "resposta esperada",
+      "spokenText": "texto em inglês que será lido em voz alta"
     }
   ]
 }
+
+Exemplo de content (resumido):
+":::pt\\n## Simple Present\\nUsamos para rotinas...\\n### Exemplos\\n- I drink water every day.\\n- They live in Brazil.\\n:::en\\n## Simple Present\\nWe use it for routines...\\n### Examples\\n- I drink water every day.\\n- They live in Brazil."
 
 Regras:
 - 3 a 8 questões variando os 4 tipos. Pelo menos 1 de áudio se o tema permitir.
