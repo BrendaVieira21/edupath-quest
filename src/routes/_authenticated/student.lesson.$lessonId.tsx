@@ -284,7 +284,11 @@ function renderMarkdownish(text: string) {
   lines.forEach((line, i) => {
     if (/^\s*[-*]\s+/.test(line)) { listBuf.push(line); return; }
     flushList();
-    if (/^##\s+/.test(line)) out.push(<h3 key={i} className="text-xl font-bold">{line.replace(/^##\s+/, "")}</h3>);
+    if (/^####\s+/.test(line)) out.push(<h6 key={i} className="text-sm font-bold mt-2">{renderInline(line.replace(/^####\s+/, ""))}</h6>);
+    else if (/^###\s+/.test(line)) out.push(<h4 key={i} className="text-lg font-bold mt-3">{renderInline(line.replace(/^###\s+/, ""))}</h4>);
+    else if (/^##\s+/.test(line)) out.push(<h3 key={i} className="text-xl font-bold mt-4">{renderInline(line.replace(/^##\s+/, ""))}</h3>);
+    else if (/^#\s+/.test(line)) out.push(<h2 key={i} className="text-2xl font-extrabold mt-4">{renderInline(line.replace(/^#\s+/, ""))}</h2>);
+    else if (/^>\s+/.test(line)) out.push(<blockquote key={i} className="border-l-4 border-primary/40 pl-3 italic text-muted-foreground">{renderInline(line.replace(/^>\s+/, ""))}</blockquote>);
     else if (line.trim() === "") out.push(<div key={i} className="h-1" />);
     else out.push(<p key={i}>{renderInline(line)}</p>);
   });
@@ -292,8 +296,22 @@ function renderMarkdownish(text: string) {
   return out;
 }
 function renderInline(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>));
+  // Order matters: bold (**), then italic (*_), then inline code (`)
+  const tokens: React.ReactNode[] = [];
+  const regex = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let key = 0;
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) tokens.push(<span key={key++}>{text.slice(last, m.index)}</span>);
+    const t = m[0];
+    if (t.startsWith("**") || t.startsWith("__")) tokens.push(<strong key={key++}>{t.slice(2, -2)}</strong>);
+    else if (t.startsWith("`")) tokens.push(<code key={key++} className="rounded bg-muted px-1 py-0.5 font-mono text-[13px]">{t.slice(1, -1)}</code>);
+    else tokens.push(<em key={key++}>{t.slice(1, -1)}</em>);
+    last = m.index + t.length;
+  }
+  if (last < text.length) tokens.push(<span key={key++}>{text.slice(last)}</span>);
+  return tokens;
 }
 
 function DualLanguageMarkdown({ content }: { content: string | null | undefined }) {
