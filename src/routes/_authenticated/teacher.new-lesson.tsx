@@ -139,7 +139,7 @@ function LessonForm({
       setDescription(result.description);
       setContent(result.content);
       setQuestions(
-        result.questions.map((q) => ({
+        result.questions.map((q: any) => ({
           id: crypto.randomUUID(),
           type: q.type as QType,
           question: q.question,
