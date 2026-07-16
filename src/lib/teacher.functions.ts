@@ -129,10 +129,9 @@ export const getStudentDetail = createServerFn({ method: "GET" })
     if (!isTeacher) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: profile }, { data: progress }, { data: payments }, adminRes] = await Promise.all([
+    const [{ data: profile }, { data: progress }, adminRes] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, full_name").eq("id", data.studentId).maybeSingle(),
       supabaseAdmin.from("lesson_progress").select("*").eq("user_id", data.studentId),
-      supabaseAdmin.from("lesson_payments").select("*").eq("user_id", data.studentId),
       supabaseAdmin.auth.admin.getUserById(data.studentId),
     ]);
     return {
@@ -140,28 +139,7 @@ export const getStudentDetail = createServerFn({ method: "GET" })
       fullName: profile?.full_name ?? "",
       email: adminRes.data.user?.email ?? "",
       progress: progress ?? [],
-      payments: payments ?? [],
     };
-  });
-
-/** Teacher toggles payment status for a lesson. */
-export const togglePaymentStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ studentId: z.string().uuid(), lessonId: z.string().uuid(), paid: z.boolean() }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { data: isTeacher } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "teacher",
-    });
-    if (!isTeacher) throw new Error("Forbidden");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("lesson_payments")
-      .upsert({ user_id: data.studentId, lesson_id: data.lessonId, paid: data.paid }, { onConflict: "user_id, lesson_id" });
-    
-    if (error) throw error;
-    return { ok: true };
   });
 
 /** Teacher deletes a student account. */
