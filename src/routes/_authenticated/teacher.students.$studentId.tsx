@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, KeyRound, Trophy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getStudentDetail, resetStudentPassword, deleteStudent } from "@/lib/teacher.functions";
+import { getStudentDetail, resetStudentPassword, deleteStudent, togglePaymentStatus } from "@/lib/teacher.functions";
 import { lessonsQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/teacher/students/$studentId")({
@@ -31,8 +31,20 @@ function StudentDetail() {
   if (!detail) return null;
 
   const progressById = new Map(detail.progress.map((p) => [p.lesson_id, p]));
+  const paymentById = new Map(detail.payments?.map((p: any) => [p.lesson_id, p.paid]) ?? []);
   const completed = detail.progress.filter((p) => p.completed_at).length;
   const total = lessons.length;
+  
+  const togglePaymentFn = useServerFn(togglePaymentStatus);
+  const qc = useQueryClient();
+  const toggleMut = useMutation({
+    mutationFn: (args: { lessonId: string, paid: boolean }) => togglePaymentFn({ data: { studentId, ...args } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["student-detail", studentId] });
+      toast.success("Status de pagamento atualizado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <div className="min-h-screen pb-16">
@@ -74,6 +86,7 @@ function StudentDetail() {
               <thead className="bg-muted text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">Fase</th>
+                  <th className="px-3 py-2">Pagamento</th>
                   <th className="px-3 py-2">Pontuação</th>
                   <th className="px-3 py-2">Tentativas</th>
                   <th className="px-3 py-2">Última atividade</th>
@@ -92,6 +105,17 @@ function StudentDetail() {
                             <div className="font-bold">{l.title}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        {paymentById.get(l.id) ? (
+                          <Button variant="outline" size="sm" onClick={() => toggleMut.mutate({ lessonId: l.id, paid: false })} disabled={toggleMut.isPending} className="rounded-xl border-success text-success hover:bg-success/10 hover:text-success font-bold h-8">
+                            ✅ Pago
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => toggleMut.mutate({ lessonId: l.id, paid: true })} disabled={toggleMut.isPending} className="rounded-xl border-muted-foreground/30 text-muted-foreground hover:bg-muted font-bold h-8">
+                            ⏳ Pendente
+                          </Button>
+                        )}
                       </td>
                       <td className="px-3 py-3">
                         {p ? (
