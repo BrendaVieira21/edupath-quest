@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Upload, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, Check, Volume2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { lessonQuery, lessonsQuery, myRoleQuery } from "@/lib/queries";
+import { getTTSAudio } from "@/lib/audio.functions";
 
 type Search = { id?: string };
 
@@ -105,6 +106,7 @@ function LessonForm({
       [{ id: crypto.randomUUID(), question: "", type: "multiple_choice", options: ["", "", "", ""], correctIndex: 0, textAnswer: "", spokenText: "" }],
   );
   const [saving, setSaving] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
   function updateQ(id: string, patch: Partial<QDraft>) {
     setQuestions((qs) => qs.map((q) => (q.id === id ? { ...q, ...patch } : q)));
@@ -296,15 +298,24 @@ function LessonForm({
                       <Label className="text-xs">Texto que será lido em voz alta pelo navegador (Inglês)</Label>
                       <div className="flex gap-2">
                         <Input value={q.spokenText} onChange={(e) => updateQ(q.id, { spokenText: e.target.value })} placeholder="Texto para áudio" className="rounded-xl bg-background" />
-                        <Button type="button" variant="secondary" size="sm" className="rounded-xl" onClick={() => {
+                        <Button type="button" disabled={playingAudio === q.id} variant="secondary" size="sm" className="rounded-xl" onClick={async () => {
                           if (!q.spokenText) return toast.error("Digite o texto do áudio primeiro");
-                          const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(q.spokenText)}&tl=en&client=tw-ob`;
-                          new Audio(url).play().catch(() => {
+                          setPlayingAudio(q.id);
+                          try {
+                            const res = await getTTSAudio({ data: { text: q.spokenText } });
+                            const audio = new Audio(res.audioDataUrl);
+                            audio.onended = () => setPlayingAudio(null);
+                            audio.play().catch(() => setPlayingAudio(null));
+                          } catch (err) {
+                            setPlayingAudio(null);
                             const u = new SpeechSynthesisUtterance(q.spokenText);
                             u.lang = "en-US";
                             window.speechSynthesis.speak(u);
-                          });
-                        }}>Testar Voz</Button>
+                          }
+                        }}>
+                          {playingAudio === q.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Volume2 className="mr-1 h-4 w-4" />}
+                          {playingAudio === q.id ? "Carregando..." : "Testar Voz"}
+                        </Button>
                       </div>
                     </div>
                   )}

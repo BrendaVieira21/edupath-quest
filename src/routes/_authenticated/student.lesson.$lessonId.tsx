@@ -6,9 +6,10 @@ import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Check, Download, X, Trophy } from "lucide-react";
+import { ArrowLeft, Check, Download, X, Trophy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { lessonQuery, myProgressQuery } from "@/lib/queries";
+import { getTTSAudio } from "@/lib/audio.functions";
 
 export const Route = createFileRoute("/_authenticated/student/lesson/$lessonId")({
   component: LessonPage,
@@ -21,6 +22,7 @@ function LessonPage() {
   const { data, isLoading } = useQuery(lessonQuery(lessonId));
   const [mode, setMode] = useState<"read" | "quiz" | "results">("read");
   const [answers, setAnswers] = useState<Record<string, number | string | undefined>>({});
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
   const correctCount = useMemo(() => {
     if (!data) return 0;
@@ -142,16 +144,21 @@ function LessonPage() {
                     
                     {type.includes("audio") && (
                       <div className="mb-4">
-                        <Button type="button" onClick={() => {
-                          const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(opts.spoken_text)}&tl=en&client=tw-ob`;
-                          new Audio(url).play().catch(() => {
-                            // Fallback to browser TTS if audio tag fails
+                        <Button type="button" disabled={playingAudio === q.id} onClick={async () => {
+                          setPlayingAudio(q.id);
+                          try {
+                            const res = await getTTSAudio({ data: { text: opts.spoken_text } });
+                            const audio = new Audio(res.audioDataUrl);
+                            audio.onended = () => setPlayingAudio(null);
+                            audio.play().catch(() => setPlayingAudio(null));
+                          } catch (err) {
+                            setPlayingAudio(null);
                             const u = new SpeechSynthesisUtterance(opts.spoken_text);
                             u.lang = "en-US";
                             window.speechSynthesis.speak(u);
-                          });
+                          }
                         }} variant="outline" className="rounded-xl font-bold w-full max-w-[200px] border-primary text-primary hover:bg-primary/10">
-                          🔊 Ouvir áudio
+                          {playingAudio === q.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando...</> : "🔊 Ouvir áudio"}
                         </Button>
                       </div>
                     )}
