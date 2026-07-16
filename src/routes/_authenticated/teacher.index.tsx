@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Users, BookOpen, Pencil, ArrowUp, ArrowDown, Copy, UserPlus, Trophy, Activity } from "lucide-react";
+import { Plus, Users, BookOpen, Pencil, ArrowUp, ArrowDown, Copy, UserPlus, Trophy, Activity, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { lessonsQuery, myRoleQuery } from "@/lib/queries";
-import { createStudent, listStudents } from "@/lib/teacher.functions";
+import { deleteStudent, createStudent, listStudents } from "@/lib/teacher.functions";
 
 export const Route = createFileRoute("/_authenticated/teacher/")({ component: TeacherPage });
 
@@ -166,6 +166,7 @@ function TeacherPage() {
                     <th className="px-3 py-2">Aluno</th>
                     <th className="px-3 py-2">Progresso</th>
                     <th className="px-3 py-2 text-right">Concluído</th>
+                    <th className="px-3 py-2 text-center w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -186,6 +187,21 @@ function TeacherPage() {
                           <div className="mt-1 text-xs text-muted-foreground">{pct}%</div>
                         </td>
                         <td className="px-3 py-3 text-right font-bold">{s.completedCount}/{total}</td>
+                        <td className="px-3 py-3 text-center">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/15" onClick={async () => {
+                            if (window.confirm(`Tem certeza que deseja remover o aluno ${s.fullName || s.email}? Isso apagará todo o progresso dele.`)) {
+                              try {
+                                await deleteStudent({ data: { userId: s.id } });
+                                toast.success("Aluno removido");
+                                qc.invalidateQueries({ queryKey: ["students"] });
+                              } catch (e: any) {
+                                toast.error(e.message);
+                              }
+                            }
+                          }} title="Remover aluno">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
                       </tr>
                     );
                   })}

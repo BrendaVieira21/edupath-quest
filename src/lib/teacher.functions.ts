@@ -141,3 +141,19 @@ export const getStudentDetail = createServerFn({ method: "GET" })
       progress: progress ?? [],
     };
   });
+
+/** Teacher deletes a student account. */
+export const deleteStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: isTeacher } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "teacher",
+    });
+    if (!isTeacher) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw error;
+    return { ok: true };
+  });
