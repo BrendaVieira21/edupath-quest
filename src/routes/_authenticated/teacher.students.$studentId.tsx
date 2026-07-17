@@ -1,17 +1,19 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, KeyRound, Trophy, Trash2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Trophy, Trash2, DollarSign, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getStudentDetail, resetStudentPassword, deleteStudent } from "@/lib/teacher.functions";
-import { lessonsQuery } from "@/lib/queries";
+import { lessonsQuery, studentPaymentsQuery } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/_authenticated/teacher/students/$studentId")({
   component: StudentDetail,
