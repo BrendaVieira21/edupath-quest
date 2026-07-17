@@ -1,17 +1,19 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, KeyRound, Trophy, Trash2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Trophy, Trash2, DollarSign, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getStudentDetail, resetStudentPassword, deleteStudent } from "@/lib/teacher.functions";
-import { lessonsQuery } from "@/lib/queries";
+import { lessonsQuery, studentPaymentsQuery } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/_authenticated/teacher/students/$studentId")({
   component: StudentDetail,
@@ -20,12 +22,30 @@ export const Route = createFileRoute("/_authenticated/teacher/students/$studentI
 function StudentDetail() {
   const { studentId } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const detailFn = useServerFn(getStudentDetail);
   const { data: lessons = [] } = useQuery(lessonsQuery());
+  const { data: payments = [] } = useQuery(studentPaymentsQuery(studentId));
   const { data: detail, isLoading } = useQuery({
     queryKey: ["student-detail", studentId],
     queryFn: () => detailFn({ data: { studentId } }),
   });
+
+  const paidByLesson = new Map(payments.map((p) => [p.lesson_id, p]));
+
+  async function togglePayment(lessonId: string) {
+    const existing = paidByLesson.get(lessonId);
+    if (existing) {
+      const { error } = await supabase.from("lesson_payments").delete().eq("id", existing.id);
+      if (error) return toast.error(error.message);
+      toast.success("Marcado como não pago");
+    } else {
+      const { error } = await supabase.from("lesson_payments").insert({ student_id: studentId, lesson_id: lessonId, paid: true });
+      if (error) return toast.error(error.message);
+      toast.success("Marcado como pago");
+    }
+    qc.invalidateQueries({ queryKey: studentPaymentsQuery(studentId).queryKey });
+  }
 
   if (isLoading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Loading…</div>;
   if (!detail) return null;
@@ -33,6 +53,8 @@ function StudentDetail() {
   const progressById = new Map(detail.progress.map((p) => [p.lesson_id, p]));
   const completed = detail.progress.filter((p) => p.completed_at).length;
   const total = lessons.length;
+  const paidCount = payments.filter((p) => p.paid).length;
+
 
   return (
     <div className="min-h-screen pb-16">
@@ -47,9 +69,15 @@ function StudentDetail() {
             <div>
               <h1 className="text-2xl">{detail.fullName || "(sem nome)"}</h1>
               <p className="text-sm text-muted-foreground">{detail.email}</p>
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
-                <Trophy className="h-4 w-4" /> {completed}/{total} fases · {completed * 10} XP
+              <div className="mt-3 flex flex-wrap gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
+                  <Trophy className="h-4 w-4" /> {completed}/{total} fases · {completed * 10} XP
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-success/20 px-3 py-1 text-sm font-bold text-success">
+                  <DollarSign className="h-4 w-4" /> {paidCount}/{total} aulas pagas
+                </div>
               </div>
+
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button variant="outline" size="sm" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={async () => {
@@ -76,12 +104,14 @@ function StudentDetail() {
                   <th className="px-3 py-2">Fase</th>
                   <th className="px-3 py-2">Pontuação</th>
                   <th className="px-3 py-2">Tentativas</th>
+                  <th className="px-3 py-2">Pagamento</th>
                   <th className="px-3 py-2">Última atividade</th>
                 </tr>
               </thead>
               <tbody>
                 {lessons.map((l, i) => {
                   const p = progressById.get(l.id);
+                  const paid = paidByLesson.get(l.id);
                   return (
                     <tr key={l.id} className="border-t">
                       <td className="px-3 py-3">
@@ -101,6 +131,15 @@ function StudentDetail() {
                         ) : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-3 py-3">{p?.attempts ?? 0}</td>
+                      <td className="px-3 py-3">
+                        <button
+                          type="button"
+                          onClick={() => togglePayment(l.id)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition ${paid ? "bg-success/20 text-success hover:bg-success/30" : "bg-muted text-muted-foreground hover:bg-destructive/20 hover:text-destructive"}`}
+                        >
+                          {paid ? <><Check className="h-3 w-3" /> Pago</> : <><X className="h-3 w-3" /> Não pago</>}
+                        </button>
+                      </td>
                       <td className="px-3 py-3 text-xs text-muted-foreground">
                         {p?.updated_at ? new Date(p.updated_at).toLocaleString() : "—"}
                       </td>
@@ -111,6 +150,7 @@ function StudentDetail() {
             </table>
           </div>
         </Card>
+
       </div>
     </div>
   );

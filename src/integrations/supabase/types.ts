@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      checkpoint_progress: {
+        Row: {
+          attempts: number
+          checkpoint_index: number
+          completed_at: string | null
+          correct: number
+          id: string
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          checkpoint_index: number
+          completed_at?: string | null
+          correct?: number
+          id?: string
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          checkpoint_index?: number
+          completed_at?: string | null
+          correct?: number
+          id?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lesson_attachments: {
         Row: {
           created_at: string
@@ -39,6 +72,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lesson_attachments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_payments: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          lesson_id: string
+          note: string | null
+          paid: boolean
+          paid_at: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          note?: string | null
+          paid?: boolean
+          paid_at?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          note?: string | null
+          paid?: boolean
+          paid_at?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_payments_lesson_id_fkey"
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
@@ -126,18 +203,21 @@ export type Database = {
           full_name: string
           id: string
           updated_at: string
+          xp_spent: number
         }
         Insert: {
           created_at?: string
           full_name?: string
           id: string
           updated_at?: string
+          xp_spent?: number
         }
         Update: {
           created_at?: string
           full_name?: string
           id?: string
           updated_at?: string
+          xp_spent?: number
         }
         Relationships: []
       }
