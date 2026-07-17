@@ -32,6 +32,57 @@ export type Progress = {
   updated_at: string;
 };
 
+export type Payment = {
+  id: string;
+  student_id: string;
+  lesson_id: string;
+  paid: boolean;
+  amount: number | null;
+  note: string | null;
+  paid_at: string;
+};
+
+export type CheckpointProgress = {
+  id: string;
+  user_id: string;
+  checkpoint_index: number;
+  correct: number;
+  total: number;
+  attempts: number;
+  completed_at: string | null;
+};
+
+export const myPaymentsQuery = () =>
+  queryOptions({
+    queryKey: ["my-payments"],
+    queryFn: async (): Promise<Payment[]> => {
+      const { data, error } = await supabase.from("lesson_payments").select("*");
+      if (error) throw error;
+      return (data ?? []) as Payment[];
+    },
+  });
+
+export const studentPaymentsQuery = (studentId: string) =>
+  queryOptions({
+    queryKey: ["student-payments", studentId],
+    queryFn: async (): Promise<Payment[]> => {
+      const { data, error } = await supabase.from("lesson_payments").select("*").eq("student_id", studentId);
+      if (error) throw error;
+      return (data ?? []) as Payment[];
+    },
+  });
+
+export const myCheckpointsQuery = () =>
+  queryOptions({
+    queryKey: ["my-checkpoints"],
+    queryFn: async (): Promise<CheckpointProgress[]> => {
+      const { data, error } = await supabase.from("checkpoint_progress").select("*");
+      if (error) throw error;
+      return (data ?? []) as CheckpointProgress[];
+    },
+  });
+
+
 export const lessonsQuery = () =>
   queryOptions({
     queryKey: ["lessons"],
