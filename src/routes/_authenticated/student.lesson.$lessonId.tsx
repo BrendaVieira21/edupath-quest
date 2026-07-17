@@ -23,9 +23,19 @@ function LessonPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(lessonQuery(lessonId));
+  const { data: xp, refetch: refetchXp } = useQuery({ queryKey: ["my-xp"], queryFn: () => getMyXp() });
+  const buyHintFn = useServerFn(buyHint);
   const [mode, setMode] = useState<"read" | "quiz" | "results">("read");
   const [answers, setAnswers] = useState<Record<string, number | string | undefined>>({});
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [hints, setHints] = useState<Record<string, string>>({});
+  const [loadingHint, setLoadingHint] = useState<string | null>(null);
+  const [speed, setSpeed] = useState<number>(() => {
+    if (typeof window === "undefined") return 1;
+    return parseFloat(localStorage.getItem("tts-speed") || "1");
+  });
+  const changeSpeed = (s: number) => { setSpeed(s); if (typeof window !== "undefined") localStorage.setItem("tts-speed", String(s)); };
+
 
   const correctCount = useMemo(() => {
     if (!data) return 0;
