@@ -49,7 +49,7 @@ function CheckpointPage() {
 
   const correctCount = useMemo(() => {
     if (!data) return 0;
-    return data.questions.reduce((acc, q) => {
+    return data.questions.reduce((acc: number, q: CPQuestion) => {
       const ans = answers[q.id];
       if (ans === undefined) return acc;
       if (q.type.includes("choice")) return acc + (ans === q.correctIndex ? 1 : 0);
@@ -75,7 +75,7 @@ function CheckpointPage() {
   );
 
   async function submit() {
-    const unanswered = data!.questions.some((q) => {
+    const unanswered = data!.questions.some((q: CPQuestion) => {
       const a = answers[q.id];
       return a === undefined || (typeof a === "string" && a.trim() === "");
     });
@@ -106,7 +106,7 @@ function CheckpointPage() {
           {mode === "quiz" && (
             <div className="space-y-6">
               <SpeedControl speed={speed} onChange={(s) => { setSpeed(s); localStorage.setItem("tts-speed", String(s)); }} />
-              {data.questions.map((q, qi) => (
+              {data.questions.map((q: CPQuestion, qi: number) => (
                 <div key={q.id} className="rounded-2xl border-2 bg-background/50 p-4">
                   <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
                   {q.type.includes("audio") && (
@@ -131,7 +131,7 @@ function CheckpointPage() {
                   {q.question && <div className="mb-3 font-bold">{q.question}</div>}
                   {q.type.includes("choice") ? (
                     <div className="grid gap-2">
-                      {q.options.map((opt, oi) => {
+                      {q.options.map((opt: string, oi: number) => {
                         const active = answers[q.id] === oi;
                         return (
                           <button key={oi} type="button" onClick={() => setAnswers((p) => ({ ...p, [q.id]: oi }))}
@@ -161,7 +161,7 @@ function CheckpointPage() {
                   Você ganhou <b>{correctCount * 5} XP</b> neste checkpoint! <Sparkles className="inline h-4 w-4 text-warning" />
                 </div>
               </div>
-              {data.questions.map((q, qi) => {
+              {data.questions.map((q: CPQuestion, qi: number) => {
                 const picked = answers[q.id];
                 const isRight = q.type.includes("choice")
                   ? picked === q.correctIndex
