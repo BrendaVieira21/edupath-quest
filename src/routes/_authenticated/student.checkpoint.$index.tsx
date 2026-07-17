@@ -15,6 +15,17 @@ export const Route = createFileRoute("/_authenticated/student/checkpoint/$index"
   component: CheckpointPage,
 });
 
+type CPQuestion = {
+  id: string;
+  type: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  textAnswer: string;
+  spokenText: string;
+};
+
+
 function CheckpointPage() {
   const { index } = Route.useParams();
   const idx = parseInt(index, 10);
