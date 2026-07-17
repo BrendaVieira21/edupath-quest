@@ -22,12 +22,30 @@ export const Route = createFileRoute("/_authenticated/teacher/students/$studentI
 function StudentDetail() {
   const { studentId } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const detailFn = useServerFn(getStudentDetail);
   const { data: lessons = [] } = useQuery(lessonsQuery());
+  const { data: payments = [] } = useQuery(studentPaymentsQuery(studentId));
   const { data: detail, isLoading } = useQuery({
     queryKey: ["student-detail", studentId],
     queryFn: () => detailFn({ data: { studentId } }),
   });
+
+  const paidByLesson = new Map(payments.map((p) => [p.lesson_id, p]));
+
+  async function togglePayment(lessonId: string) {
+    const existing = paidByLesson.get(lessonId);
+    if (existing) {
+      const { error } = await supabase.from("lesson_payments").delete().eq("id", existing.id);
+      if (error) return toast.error(error.message);
+      toast.success("Marcado como não pago");
+    } else {
+      const { error } = await supabase.from("lesson_payments").insert({ student_id: studentId, lesson_id: lessonId, paid: true });
+      if (error) return toast.error(error.message);
+      toast.success("Marcado como pago");
+    }
+    qc.invalidateQueries({ queryKey: studentPaymentsQuery(studentId).queryKey });
+  }
 
   if (isLoading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Loading…</div>;
   if (!detail) return null;
@@ -35,6 +53,8 @@ function StudentDetail() {
   const progressById = new Map(detail.progress.map((p) => [p.lesson_id, p]));
   const completed = detail.progress.filter((p) => p.completed_at).length;
   const total = lessons.length;
+  const paidCount = payments.filter((p) => p.paid).length;
+
 
   return (
     <div className="min-h-screen pb-16">
