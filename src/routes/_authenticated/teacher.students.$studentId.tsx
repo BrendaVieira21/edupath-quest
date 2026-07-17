@@ -104,12 +104,14 @@ function StudentDetail() {
                   <th className="px-3 py-2">Fase</th>
                   <th className="px-3 py-2">Pontuação</th>
                   <th className="px-3 py-2">Tentativas</th>
+                  <th className="px-3 py-2">Pagamento</th>
                   <th className="px-3 py-2">Última atividade</th>
                 </tr>
               </thead>
               <tbody>
                 {lessons.map((l, i) => {
                   const p = progressById.get(l.id);
+                  const paid = paidByLesson.get(l.id);
                   return (
                     <tr key={l.id} className="border-t">
                       <td className="px-3 py-3">
@@ -129,6 +131,15 @@ function StudentDetail() {
                         ) : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-3 py-3">{p?.attempts ?? 0}</td>
+                      <td className="px-3 py-3">
+                        <button
+                          type="button"
+                          onClick={() => togglePayment(l.id)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition ${paid ? "bg-success/20 text-success hover:bg-success/30" : "bg-muted text-muted-foreground hover:bg-destructive/20 hover:text-destructive"}`}
+                        >
+                          {paid ? <><Check className="h-3 w-3" /> Pago</> : <><X className="h-3 w-3" /> Não pago</>}
+                        </button>
+                      </td>
                       <td className="px-3 py-3 text-xs text-muted-foreground">
                         {p?.updated_at ? new Date(p.updated_at).toLocaleString() : "—"}
                       </td>
@@ -139,6 +150,7 @@ function StudentDetail() {
             </table>
           </div>
         </Card>
+
       </div>
     </div>
   );
