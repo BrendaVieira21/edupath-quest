@@ -1,15 +1,18 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Check, Download, X, Trophy, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Download, X, Trophy, Loader2, Lightbulb, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { lessonQuery, myProgressQuery } from "@/lib/queries";
 import { getTTSAudio } from "@/lib/audio.functions";
+import { buyHint, getMyXp } from "@/lib/gamification.functions";
+
 
 export const Route = createFileRoute("/_authenticated/student/lesson/$lessonId")({
   component: LessonPage,
