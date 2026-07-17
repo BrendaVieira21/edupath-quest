@@ -147,14 +147,52 @@ function LessonPage() {
 
           {mode === "quiz" && (
             <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase text-muted-foreground">Áudio</span>
+                  {[0.75, 1, 1.25].map((s) => (
+                    <button key={s} type="button" onClick={() => changeSpeed(s)}
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${speed === s ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"}`}>
+                      {s}x
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold">
+                  <Sparkles className="h-4 w-4" /> {xp?.balance ?? 0} XP
+                </div>
+              </div>
               {questions.map((q, qi) => {
                 const opts = q.options as any;
                 const type = opts?.type ?? "multiple_choice";
+                const choicesArr: string[] = Array.isArray(opts) ? opts : (Array.isArray(opts?.choices) ? opts.choices : []);
                 
                 return (
                   <div key={q.id} className="rounded-2xl border-2 bg-background/50 p-4">
-                    <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
-                    
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Questão {qi + 1}</div>
+                      <Button type="button" size="sm" variant="ghost" disabled={loadingHint === q.id || !!hints[q.id]}
+                        onClick={async () => {
+                          setLoadingHint(q.id);
+                          try {
+                            const res = await buyHintFn({ data: { question: q.question || opts.spoken_text || "", options: choicesArr, lessonTitle: lesson.title } });
+                            setHints((p) => ({ ...p, [q.id]: res.hint }));
+                            refetchXp();
+                            toast.success(`Dica desbloqueada! -5 XP`);
+                          } catch (e: any) { toast.error(e.message); }
+                          setLoadingHint(null);
+                        }}
+                        className="h-7 gap-1 rounded-full px-2 text-xs font-bold text-warning-foreground hover:bg-warning/20">
+                        {loadingHint === q.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lightbulb className="h-3 w-3" />}
+                        {hints[q.id] ? "Dica" : "Dica (5 XP)"}
+                      </Button>
+                    </div>
+
+                    {hints[q.id] && (
+                      <div className="mb-3 rounded-xl border-2 border-warning/40 bg-warning/10 p-3 text-sm">
+                        <b className="text-xs uppercase text-warning-foreground">💡 Dica: </b>{hints[q.id]}
+                      </div>
+                    )}
+
                     {type.includes("audio") && (
                       <div className="mb-4">
                         <Button type="button" disabled={playingAudio === q.id} onClick={async () => {
@@ -162,12 +200,13 @@ function LessonPage() {
                           try {
                             const res = await getTTSAudio({ data: { text: opts.spoken_text } });
                             const audio = new Audio(res.audioDataUrl);
+                            audio.playbackRate = speed;
                             audio.onended = () => setPlayingAudio(null);
                             audio.play().catch(() => setPlayingAudio(null));
                           } catch (err) {
                             setPlayingAudio(null);
                             const u = new SpeechSynthesisUtterance(opts.spoken_text);
-                            u.lang = "en-US";
+                            u.lang = "en-US"; u.rate = speed;
                             window.speechSynthesis.speak(u);
                           }
                         }} variant="outline" className="rounded-xl font-bold w-full max-w-[200px] border-primary text-primary hover:bg-primary/10">
@@ -180,7 +219,7 @@ function LessonPage() {
                     
                     {type.includes("choice") ? (
                       <div className="grid gap-2">
-                        {(Array.isArray(opts) ? opts : (Array.isArray(opts?.choices) ? opts.choices : [])).map((opt: string, oi: number) => {
+                        {choicesArr.map((opt: string, oi: number) => {
                           const active = answers[q.id] === oi;
                           return (
                             <button key={oi} type="button" onClick={() => setAnswers((p) => ({ ...p, [q.id]: oi }))}
@@ -206,6 +245,7 @@ function LessonPage() {
               <Button onClick={submit} className="w-full rounded-2xl py-6 text-base font-bold btn-pop">Enviar respostas</Button>
             </div>
           )}
+
 
           {mode === "results" && (
             <div className="space-y-6">
