@@ -69,9 +69,15 @@ function StudentDetail() {
             <div>
               <h1 className="text-2xl">{detail.fullName || "(sem nome)"}</h1>
               <p className="text-sm text-muted-foreground">{detail.email}</p>
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
-                <Trophy className="h-4 w-4" /> {completed}/{total} fases · {completed * 10} XP
+              <div className="mt-3 flex flex-wrap gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
+                  <Trophy className="h-4 w-4" /> {completed}/{total} fases · {completed * 10} XP
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-success/20 px-3 py-1 text-sm font-bold text-success">
+                  <DollarSign className="h-4 w-4" /> {paidCount}/{total} aulas pagas
+                </div>
               </div>
+
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button variant="outline" size="sm" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={async () => {
