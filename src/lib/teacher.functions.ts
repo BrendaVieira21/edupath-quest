@@ -23,6 +23,33 @@ export const claimTeacherRole = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Fixed teacher account — idempotent seed. Safe to call anytime; only creates if missing. */
+export const TEACHER_FIXED_EMAIL = "professora@english.com";
+export const TEACHER_FIXED_PASSWORD = "professora.english";
+
+export const ensureTeacherAccount = createServerFn({ method: "POST" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // Check if user exists
+  const list = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+  const existing = list.data.users.find((u) => u.email?.toLowerCase() === TEACHER_FIXED_EMAIL);
+  let userId = existing?.id;
+  if (!userId) {
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: TEACHER_FIXED_EMAIL,
+      password: TEACHER_FIXED_PASSWORD,
+      email_confirm: true,
+      user_metadata: { full_name: "Professora" },
+    });
+    if (error) throw error;
+    userId = created.user?.id;
+  }
+  if (!userId) return { ok: false };
+  // Ensure teacher role
+  await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+  await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "teacher" });
+  return { ok: true };
+});
+
 /** Teacher creates a student account manually. */
 export const createStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -229,40 +229,71 @@ function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: str
   );
 }
 
+function slugify(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+}
+
 function CreateStudentDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [password, setPassword] = useState("aluno.english");
   const qc = useQueryClient();
   const createFn = useServerFn(createStudent);
   const mut = useMutation({
     mutationFn: () => createFn({ data: { fullName: name, email, password } }),
     onSuccess: () => {
-      toast.success("Aluno criado!");
+      toast.success(`Aluno criado! 🐾 Login: ${email} / ${password}`);
       qc.invalidateQueries({ queryKey: ["students"] });
       setOpen(false);
-      setName(""); setEmail(""); setPassword("");
+      setName(""); setEmail(""); setEmailTouched(false); setPassword("aluno.english");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  function onNameChange(v: string) {
+    setName(v);
+    if (!emailTouched) {
+      const slug = slugify(v);
+      setEmail(slug ? `${slug}@english.com` : "");
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setName(""); setEmail(""); setEmailTouched(false); setPassword("aluno.english"); } }}>
       <DialogTrigger asChild>
         <Button size="sm" className="rounded-xl btn-pop"><UserPlus className="mr-1 h-4 w-4" /> Adicionar aluno</Button>
       </DialogTrigger>
       <DialogContent className="rounded-3xl">
-        <DialogHeader><DialogTitle>Adicionar novo aluno</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Adicionar novo aluno 🐱</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1.5"><Label>Nome completo</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl" /></div>
-          <div className="space-y-1.5"><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-xl" /></div>
-          <div className="space-y-1.5"><Label>Senha temporária (mín 6)</Label><Input value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-xl" /></div>
+          <div className="space-y-1.5">
+            <Label>Nome completo</Label>
+            <Input value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="Ex: Maria Silva" className="rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>E-mail (gerado automaticamente)</Label>
+            <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setEmailTouched(true); }} placeholder="maria.silva@english.com" className="rounded-xl" />
+            <p className="text-xs text-muted-foreground">Editável se quiser mudar.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Senha temporária</Label>
+            <Input value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-xl" />
+            <p className="text-xs text-muted-foreground">Padrão: <code className="rounded bg-muted px-1">aluno.english</code></p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Cancelar</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="rounded-xl btn-pop">
-            {mut.isPending ? "Criando..." : "Criar aluno"}
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending || !name || !email || password.length < 6} className="rounded-xl btn-pop">
+            {mut.isPending ? "Criando..." : "Criar aluno 🐾"}
           </Button>
         </DialogFooter>
       </DialogContent>
