@@ -1,14 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { claimTeacherRole } from "@/lib/teacher.functions";
+import { ensureTeacherAccount } from "@/lib/teacher.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { GraduationCap, Sparkles, Trophy, BookOpen } from "lucide-react";
 
@@ -16,6 +14,12 @@ export const Route = createFileRoute("/auth")({ component: AuthPage });
 
 function AuthPage() {
   const navigate = useNavigate();
+  const seedTeacher = useServerFn(ensureTeacherAccount);
+
+  // Ensure the fixed teacher account exists on first visit (idempotent)
+  useEffect(() => {
+    seedTeacher().catch(() => {});
+  }, [seedTeacher]);
 
   async function afterLogin() {
     const { data: userData } = await supabase.auth.getUser();
@@ -63,19 +67,13 @@ function AuthPage() {
           </section>
 
           <Card className="rounded-3xl border-2 p-6 shadow-xl">
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-muted p-1">
-                <TabsTrigger value="login" className="rounded-xl">Entrar</TabsTrigger>
-                <TabsTrigger value="signup" className="rounded-xl">Criar conta</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="login" className="mt-5">
-                <LoginForm onDone={afterLogin} />
-              </TabsContent>
-              <TabsContent value="signup" className="mt-5">
-                <SignupForm onDone={afterLogin} />
-              </TabsContent>
-            </Tabs>
+            <div className="mb-4 text-center">
+              <h2 className="text-2xl">Entrar 🐾</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Só a professora cria contas. Peça seu login para ela!
+              </p>
+            </div>
+            <LoginForm onDone={afterLogin} />
           </Card>
         </div>
       </div>
@@ -106,7 +104,7 @@ function LoginForm({ onDone }: { onDone: () => void }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         setLoading(false);
         if (error) return toast.error(error.message);
-        toast.success("Bem-vindo(a) de volta!");
+        toast.success("Miau! Bem-vindo(a) de volta 🐱");
         onDone();
       }}
     >
@@ -120,81 +118,6 @@ function LoginForm({ onDone }: { onDone: () => void }) {
       </div>
       <Button type="submit" disabled={loading} className="w-full rounded-2xl py-6 text-base font-bold btn-pop">
         {loading ? "Entrando..." : "Entrar"}
-      </Button>
-    </form>
-  );
-}
-
-function SignupForm({ onDone }: { onDone: () => void }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [asTeacher, setAsTeacher] = useState(false);
-  const [inviteCode, setInviteCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const claim = useServerFn(claimTeacherRole);
-
-  return (
-    <form
-      className="space-y-4"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: name }, emailRedirectTo: window.location.origin },
-        });
-        if (error) { setLoading(false); return toast.error(error.message); }
-
-        // Sign in immediately (works when email confirmations are disabled, which is default for demo)
-        const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (loginErr) {
-          setLoading(false);
-          toast.success("Conta criada! Por favor, faça login.");
-          return;
-        }
-
-        if (asTeacher) {
-          try {
-            await claim({ data: { code: inviteCode } });
-            toast.success("Bem-vindo(a), professor(a)!");
-          } catch (err) {
-            toast.error("Código de convite inválido — conta criada como aluno.");
-          }
-        } else {
-          toast.success("Conta criada! Vamos aprender.");
-        }
-        setLoading(false);
-        onDone();
-      }}
-    >
-      <div className="space-y-1.5">
-        <Label htmlFor="name">Seu nome</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="rounded-xl" />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="su-email">E-mail</Label>
-        <Input id="su-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="rounded-xl" />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="su-password">Senha (mín 6)</Label>
-        <Input id="su-password" type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required className="rounded-xl" />
-      </div>
-
-      <div className="flex items-center gap-2 rounded-xl bg-muted/50 p-3">
-        <Checkbox id="asTeacher" checked={asTeacher} onCheckedChange={(v) => setAsTeacher(!!v)} />
-        <Label htmlFor="asTeacher" className="text-sm">Sou professor(a) (código de convite necessário)</Label>
-      </div>
-      {asTeacher && (
-        <div className="space-y-1.5">
-          <Label htmlFor="invite">Código de convite</Label>
-          <Input id="invite" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} className="rounded-xl" />
-        </div>
-      )}
-
-      <Button type="submit" disabled={loading} className="w-full rounded-2xl bg-secondary py-6 text-base font-bold text-secondary-foreground btn-pop btn-pop-lavender hover:bg-secondary/90">
-        {loading ? "Criando..." : "Criar conta"}
       </Button>
     </form>
   );
