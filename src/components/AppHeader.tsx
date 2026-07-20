@@ -34,9 +34,9 @@ export function AppHeader({ title, subtitle, mode }: { title: string; subtitle?:
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link to="/" className="flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-xl">🦉</div>
+          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-xl">🐱</div>
           <div className="leading-tight">
-            <div className="text-sm font-extrabold">Brivio English</div>
+            <div className="text-sm font-extrabold">Meow English 🐾</div>
             <div className="text-[11px] text-muted-foreground">{subtitle ?? title}</div>
           </div>
         </Link>
