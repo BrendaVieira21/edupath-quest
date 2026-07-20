@@ -33,9 +33,9 @@ function AuthPage() {
       <div className="mx-auto max-w-6xl">
         <header className="mb-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary text-2xl">🦉</div>
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary text-2xl">🐱</div>
             <span className="text-2xl font-extrabold tracking-tight">
-              Brivio<span className="text-primary"> English</span>
+              Meow<span className="text-primary"> English</span> <span className="text-secondary">🐾</span>
             </span>
           </div>
         </header>
@@ -43,22 +43,22 @@ function AuthPage() {
         <div className="grid items-center gap-10 md:grid-cols-2">
           <section>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
-              <Sparkles className="h-3.5 w-3.5" /> Aprendizado de inglês gamificado
+              <Sparkles className="h-3.5 w-3.5" /> Aprenda inglês com os gatinhos 🐈
             </div>
             <h1 className="text-4xl md:text-6xl leading-tight">
-              Aprenda inglês,
+              Ronrone em inglês,
               <br />
-              <span className="text-primary">um passo divertido</span>
+              <span className="text-primary">um passinho fofo</span>
               <br />
-              <span className="text-secondary">de cada vez.</span>
+              <span className="text-secondary">de cada vez. 🐾</span>
             </h1>
             <p className="mt-5 max-w-md text-base text-muted-foreground">
-              Fases rápidas, testes divertidos e uma trilha que te motiva a voltar sempre.
+              Fases rápidas, testes divertidos e uma trilha felina que te faz voltar sempre. Miau! 😺
             </p>
             <div className="mt-8 grid max-w-md grid-cols-3 gap-3">
-              <Feature icon={<BookOpen className="h-5 w-5" />} label="Fases" />
-              <Feature icon={<Trophy className="h-5 w-5" />} label="Testes" />
-              <Feature icon={<GraduationCap className="h-5 w-5" />} label="Progresso" />
+              <Feature icon={<BookOpen className="h-5 w-5" />} label="Fases 🐾" />
+              <Feature icon={<Trophy className="h-5 w-5" />} label="Testes 🐟" />
+              <Feature icon={<GraduationCap className="h-5 w-5" />} label="Progresso 😸" />
             </div>
           </section>
 
