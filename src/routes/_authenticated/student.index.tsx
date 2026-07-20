@@ -48,17 +48,17 @@ function StudentPage() {
 
   return (
     <div className="min-h-screen pb-16">
-      <AppHeader title="Aluno(a)" subtitle="Sua trilha de aprendizado" mode="student" />
+      <AppHeader title="Aluno(a)" subtitle="Sua trilha felina 🐾" mode="student" />
 
       <div className="mx-auto max-w-3xl px-4 pt-6">
         <div className="rounded-3xl border-2 bg-card p-5 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl">Sua jornada</h2>
-              <p className="text-sm text-muted-foreground">{done} de {total} fases concluídas</p>
+              <h2 className="text-2xl">Sua jornada 🐱</h2>
+              <p className="text-sm text-muted-foreground">{done} de {total} patinhas concluídas 🐾</p>
             </div>
             <div className="flex items-center gap-1 rounded-full bg-warning/30 px-3 py-1 text-sm font-bold text-warning-foreground">
-              <Star className="h-4 w-4 fill-current" /> {xp?.balance ?? done * 10} XP
+              🐟 {xp?.balance ?? done * 10} XP
             </div>
           </div>
           <Progress value={pct} className="h-3 rounded-full" />
